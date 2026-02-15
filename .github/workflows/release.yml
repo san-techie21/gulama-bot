@@ -41,10 +41,10 @@ jobs:
 
             ## Installation
             ```bash
-            pip install gulama==${{ github.ref_name }}
+            pip install gulama
             ```
 
             Or with all features:
             ```bash
-            pip install gulama[full]==${{ github.ref_name }}
+            pip install gulama[full]
             ```
