@@ -25,9 +25,8 @@ import hashlib
 import json
 import shutil
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from src.constants import DATA_DIR, SKILLS_DIR
 from src.utils.logging import get_logger
@@ -38,6 +37,7 @@ logger = get_logger("marketplace")
 @dataclass
 class SkillPackage:
     """A published skill package in GulamaHub."""
+
     name: str
     version: str
     author: str
@@ -109,10 +109,7 @@ class GulamaHub:
         results = self._registry
         if query:
             q = query.lower()
-            results = [
-                p for p in results
-                if q in p.name.lower() or q in p.description.lower()
-            ]
+            results = [p for p in results if q in p.name.lower() or q in p.description.lower()]
         if tag:
             results = [p for p in results if tag.lower() in [t.lower() for t in p.tags]]
         return results
@@ -126,13 +123,17 @@ class GulamaHub:
                 if manifest_file.exists():
                     try:
                         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
-                        installed.append({
-                            "name": manifest.get("name", skill_dir.name),
-                            "version": manifest.get("version", "unknown"),
-                            "author": manifest.get("author", "unknown"),
-                        })
+                        installed.append(
+                            {
+                                "name": manifest.get("name", skill_dir.name),
+                                "version": manifest.get("version", "unknown"),
+                                "author": manifest.get("author", "unknown"),
+                            }
+                        )
                     except Exception:
-                        installed.append({"name": skill_dir.name, "version": "unknown", "author": "unknown"})
+                        installed.append(
+                            {"name": skill_dir.name, "version": "unknown", "author": "unknown"}
+                        )
         return installed
 
     def verify_signature(self, file_path: Path, signature_hex: str, public_key_hex: str) -> bool:
@@ -162,8 +163,9 @@ class GulamaHub:
             )
             return False
 
-    def install(self, skill_name: str, source_path: Path,
-                signature_hex: str, public_key_hex: str) -> bool:
+    def install(
+        self, skill_name: str, source_path: Path, signature_hex: str, public_key_hex: str
+    ) -> bool:
         """
         Install a community skill with signature verification.
 
@@ -190,10 +192,11 @@ class GulamaHub:
             "sha256": file_hash,
             "signature": signature_hex,
             "public_key": public_key_hex,
-            "installed_at": datetime.now(timezone.utc).isoformat(),
+            "installed_at": datetime.now(UTC).isoformat(),
         }
         (install_dir / "manifest.json").write_text(
-            json.dumps(manifest, indent=2), encoding="utf-8",
+            json.dumps(manifest, indent=2),
+            encoding="utf-8",
         )
 
         logger.info("skill_installed", name=skill_name, hash=file_hash[:16])
@@ -214,7 +217,7 @@ class GulamaHub:
             logger.error("publish_rejected", skill=package.name, reason="missing_signature")
             return False
 
-        package.created_at = datetime.now(timezone.utc).isoformat()
+        package.created_at = datetime.now(UTC).isoformat()
         self._registry = [p for p in self._registry if p.name != package.name]
         self._registry.append(package)
         self._save_registry()
@@ -225,6 +228,7 @@ class GulamaHub:
     def generate_keypair() -> tuple[str, str]:
         """Generate an Ed25519 keypair for skill signing. Returns (private_key_hex, public_key_hex)."""
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
         private_key = Ed25519PrivateKey.generate()
         public_key = private_key.public_key()
         return private_key.private_bytes_raw().hex(), public_key.public_bytes_raw().hex()
@@ -233,6 +237,7 @@ class GulamaHub:
     def sign_file(file_path: Path, private_key_hex: str) -> str:
         """Sign a file with Ed25519 private key. Returns signature hex string."""
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
         private_bytes = bytes.fromhex(private_key_hex)
         private_key = Ed25519PrivateKey.from_private_bytes(private_bytes)
         file_content = file_path.read_bytes()

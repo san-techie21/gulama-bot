@@ -26,6 +26,7 @@ logger = get_logger("threat_detector")
 
 class ThreatLevel(str, Enum):
     """Threat severity levels."""
+
     INFO = "info"
     LOW = "low"
     MEDIUM = "medium"
@@ -35,6 +36,7 @@ class ThreatLevel(str, Enum):
 
 class ThreatCategory(str, Enum):
     """Categories of detected threats."""
+
     BRUTE_FORCE = "brute_force"
     PRIVILEGE_ESCALATION = "privilege_escalation"
     DATA_EXFILTRATION = "data_exfiltration"
@@ -50,6 +52,7 @@ class ThreatCategory(str, Enum):
 @dataclass
 class ThreatEvent:
     """A detected threat event."""
+
     id: str
     timestamp: float
     category: ThreatCategory
@@ -66,6 +69,7 @@ class ThreatEvent:
 @dataclass
 class UserBaseline:
     """Behavioral baseline for a user."""
+
     user_id: str
     avg_requests_per_hour: float = 0.0
     common_tools: set[str] = field(default_factory=set)
@@ -100,12 +104,8 @@ class ThreatDetector:
         self.anomaly_threshold = anomaly_threshold
 
         # Tracking state
-        self._failed_auths: dict[str, deque[float]] = defaultdict(
-            lambda: deque(maxlen=100)
-        )
-        self._request_times: dict[str, deque[float]] = defaultdict(
-            lambda: deque(maxlen=1000)
-        )
+        self._failed_auths: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=100))
+        self._request_times: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=1000))
         self._tool_usage: dict[str, deque[tuple[float, str]]] = defaultdict(
             lambda: deque(maxlen=500)
         )
@@ -159,9 +159,7 @@ class ThreatDetector:
 
         return None
 
-    def check_request_rate(
-        self, user_id: str, channel: str = ""
-    ) -> ThreatEvent | None:
+    def check_request_rate(self, user_id: str, channel: str = "") -> ThreatEvent | None:
         """Check if a user is exceeding request rate limits."""
         now = time.time()
         self._request_times[user_id].append(now)
@@ -193,9 +191,7 @@ class ThreatDetector:
         self._tool_usage[user_id].append((now, tool_name))
 
         # Check for dangerous tool sequences
-        recent_tools = [
-            name for ts, name in self._tool_usage[user_id] if now - ts < 60
-        ]
+        recent_tools = [name for ts, name in self._tool_usage[user_id] if now - ts < 60]
 
         for sequence in self._dangerous_sequences:
             if self._contains_subsequence(recent_tools, sequence):
@@ -213,8 +209,13 @@ class ThreatDetector:
         # Check for privilege escalation patterns
         if arguments:
             escalation_indicators = [
-                "sudo", "admin", "root", "chmod 777", "setuid",
-                "--privileged", "GRANT ALL",
+                "sudo",
+                "admin",
+                "root",
+                "chmod 777",
+                "setuid",
+                "--privileged",
+                "GRANT ALL",
             ]
             args_str = str(arguments).lower()
             for indicator in escalation_indicators:
@@ -236,7 +237,8 @@ class ThreatDetector:
             if tool_name not in baseline.common_tools:
                 # Using an unusual tool — flag if many unusual tools in a row
                 unusual_count = sum(
-                    1 for _, t in list(self._tool_usage[user_id])[-5:]
+                    1
+                    for _, t in list(self._tool_usage[user_id])[-5:]
                     if t not in baseline.common_tools
                 )
                 if unusual_count >= 3:
@@ -266,8 +268,7 @@ class ThreatDetector:
                 category=ThreatCategory.DATA_EXFILTRATION,
                 level=ThreatLevel.MEDIUM,
                 description=(
-                    f"Large data access: user {user_id} accessed "
-                    f"{volume} bytes of {data_type}"
+                    f"Large data access: user {user_id} accessed " f"{volume} bytes of {data_type}"
                 ),
                 source_user=user_id,
                 details={"data_type": data_type, "volume": volume},
@@ -340,11 +341,12 @@ class ThreatDetector:
             "by_category": dict(by_category),
             "blocked_sources": len(self._blocked_sources),
             "tracked_users": len(self._baselines),
-            "status": "healthy" if not any(
-                e.level in (ThreatLevel.HIGH, ThreatLevel.CRITICAL)
-                and not e.mitigated
+            "status": "healthy"
+            if not any(
+                e.level in (ThreatLevel.HIGH, ThreatLevel.CRITICAL) and not e.mitigated
                 for e in last_24h
-            ) else "alert",
+            )
+            else "alert",
         }
 
     def _create_event(self, **kwargs: Any) -> ThreatEvent:

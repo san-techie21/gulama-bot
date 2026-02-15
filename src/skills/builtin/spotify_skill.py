@@ -54,7 +54,17 @@ class SpotifySkill(BaseSkill):
                     "properties": {
                         "action": {
                             "type": "string",
-                            "enum": ["now_playing", "search", "play", "pause", "next", "previous", "queue", "playlists", "volume"],
+                            "enum": [
+                                "now_playing",
+                                "search",
+                                "play",
+                                "pause",
+                                "next",
+                                "previous",
+                                "queue",
+                                "playlists",
+                                "volume",
+                            ],
                         },
                         "query": {"type": "string", "description": "Search query"},
                         "uri": {"type": "string", "description": "Spotify URI to play or queue"},
@@ -77,7 +87,9 @@ class SpotifySkill(BaseSkill):
         action = kwargs.get("action", "")
         token = self._get_token()
         if not token:
-            return SkillResult(success=False, output="", error="SPOTIFY_ACCESS_TOKEN not configured.")
+            return SkillResult(
+                success=False, output="", error="SPOTIFY_ACCESS_TOKEN not configured."
+            )
 
         dispatch = {
             "now_playing": self._now_playing,
@@ -103,9 +115,12 @@ class SpotifySkill(BaseSkill):
 
     async def _api(self, token: str, method: str, path: str, json_data: dict | None = None) -> dict:
         import httpx
+
         headers = {"Authorization": f"Bearer {token}"}
         async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.request(method, f"{SPOTIFY_API}{path}", headers=headers, json=json_data)
+            resp = await client.request(
+                method, f"{SPOTIFY_API}{path}", headers=headers, json=json_data
+            )
             resp.raise_for_status()
             return resp.json() if resp.content else {}
 
@@ -123,10 +138,13 @@ class SpotifySkill(BaseSkill):
             output=f"Now playing: {item['name']} by {artists}\nAlbum: {item.get('album', {}).get('name', 'Unknown')}",
         )
 
-    async def _search(self, token: str, query: str = "", search_type: str = "track", **_: Any) -> SkillResult:
+    async def _search(
+        self, token: str, query: str = "", search_type: str = "track", **_: Any
+    ) -> SkillResult:
         if not query:
             return SkillResult(success=False, output="", error="query is required for search")
         import httpx
+
         headers = {"Authorization": f"Bearer {token}"}
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
@@ -146,9 +164,13 @@ class SpotifySkill(BaseSkill):
                 lines.append(f"- {item['name']} by {artists} (URI: {item['uri']})")
             elif search_type == "album":
                 artists = ", ".join(a["name"] for a in item.get("artists", []))
-                lines.append(f"- {item['name']} by {artists} ({item.get('total_tracks', 0)} tracks)")
+                lines.append(
+                    f"- {item['name']} by {artists} ({item.get('total_tracks', 0)} tracks)"
+                )
             elif search_type == "artist":
-                lines.append(f"- {item['name']} ({item.get('followers', {}).get('total', 0)} followers)")
+                lines.append(
+                    f"- {item['name']} ({item.get('followers', {}).get('total', 0)} followers)"
+                )
             elif search_type == "playlist":
                 lines.append(f"- {item['name']} ({item.get('tracks', {}).get('total', 0)} tracks)")
         return SkillResult(success=True, output="\n".join(lines) or "No results found.")
@@ -161,7 +183,9 @@ class SpotifySkill(BaseSkill):
             else:
                 body["context_uri"] = uri
         await self._api(token, "PUT", "/me/player/play", body if body else None)
-        return SkillResult(success=True, output="Playback started." + (f" Playing: {uri}" if uri else ""))
+        return SkillResult(
+            success=True, output="Playback started." + (f" Playing: {uri}" if uri else "")
+        )
 
     async def _pause(self, token: str, **_: Any) -> SkillResult:
         await self._api(token, "PUT", "/me/player/pause")
@@ -179,9 +203,12 @@ class SpotifySkill(BaseSkill):
         if not uri:
             return SkillResult(success=False, output="", error="uri is required to add to queue")
         import httpx
+
         headers = {"Authorization": f"Bearer {token}"}
         async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.post(f"{SPOTIFY_API}/me/player/queue", params={"uri": uri}, headers=headers)
+            resp = await client.post(
+                f"{SPOTIFY_API}/me/player/queue", params={"uri": uri}, headers=headers
+            )
             resp.raise_for_status()
         return SkillResult(success=True, output=f"Added to queue: {uri}")
 
@@ -189,11 +216,14 @@ class SpotifySkill(BaseSkill):
         data = await self._api(token, "GET", "/me/playlists?limit=20")
         lines = []
         for p in data.get("items", []):
-            lines.append(f"- {p['name']} ({p.get('tracks', {}).get('total', 0)} tracks, URI: {p['uri']})")
+            lines.append(
+                f"- {p['name']} ({p.get('tracks', {}).get('total', 0)} tracks, URI: {p['uri']})"
+            )
         return SkillResult(success=True, output="\n".join(lines) or "No playlists found.")
 
     async def _volume(self, token: str, volume_percent: int = 50, **_: Any) -> SkillResult:
         import httpx
+
         headers = {"Authorization": f"Bearer {token}"}
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.put(

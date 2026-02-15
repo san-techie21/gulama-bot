@@ -1,7 +1,5 @@
 """Tests for the egress filter / DLP."""
 
-import pytest
-
 from src.security.egress_filter import EgressFilter
 
 
@@ -52,9 +50,7 @@ class TestEgressFilter:
         assert result.allowed
 
     def test_sensitive_data_blocked(self):
-        result = self.filter.check_data(
-            "The OpenAI key is sk-proj-1234567890abcdefghijklmnop"
-        )
+        result = self.filter.check_data("The OpenAI key is sk-proj-1234567890abcdefghijklmnop")
         assert not result.allowed
 
     def test_add_custom_blocked_domain(self):

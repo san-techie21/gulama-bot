@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
-from typing import Callable
+from collections.abc import Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -70,9 +70,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         now = time.time()
 
         # Clean old entries
-        self._requests[client_ip] = [
-            t for t in self._requests[client_ip] if now - t < self.window
-        ]
+        self._requests[client_ip] = [t for t in self._requests[client_ip] if now - t < self.window]
 
         if len(self._requests[client_ip]) >= self.max_requests:
             logger.warning(

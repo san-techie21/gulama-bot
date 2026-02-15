@@ -88,54 +88,74 @@ class WebChannel(BaseChannel):
             # Try streaming response
             if self._agent_brain and hasattr(self._agent_brain, "stream_message"):
                 full_response = ""
-                async for chunk in self._agent_brain.stream_message(
-                    message, channel="web"
-                ):
+                async for chunk in self._agent_brain.stream_message(message, channel="web"):
                     full_response += chunk
-                    await send_fn(json.dumps({
-                        "type": "chunk",
-                        "content": chunk,
-                    }))
+                    await send_fn(
+                        json.dumps(
+                            {
+                                "type": "chunk",
+                                "content": chunk,
+                            }
+                        )
+                    )
 
                 # Send completion
-                await send_fn(json.dumps({
-                    "type": "done",
-                    "content": full_response,
-                }))
+                await send_fn(
+                    json.dumps(
+                        {
+                            "type": "done",
+                            "content": full_response,
+                        }
+                    )
+                )
 
                 session["messages"].append({"role": "assistant", "content": full_response})
 
             elif self._message_handler:
                 response = await self._message_handler(message, session["user_id"], "web")
-                await send_fn(json.dumps({
-                    "type": "done",
-                    "content": response,
-                }))
+                await send_fn(
+                    json.dumps(
+                        {
+                            "type": "done",
+                            "content": response,
+                        }
+                    )
+                )
                 session["messages"].append({"role": "assistant", "content": response})
 
             elif self._agent_brain:
-                result = await self._agent_brain.process_message(
-                    message, channel="web"
-                )
+                result = await self._agent_brain.process_message(message, channel="web")
                 response = result.get("response", "No response.")
-                await send_fn(json.dumps({
-                    "type": "done",
-                    "content": response,
-                }))
+                await send_fn(
+                    json.dumps(
+                        {
+                            "type": "done",
+                            "content": response,
+                        }
+                    )
+                )
                 session["messages"].append({"role": "assistant", "content": response})
 
             else:
-                await send_fn(json.dumps({
-                    "type": "error",
-                    "content": "No agent configured.",
-                }))
+                await send_fn(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "content": "No agent configured.",
+                        }
+                    )
+                )
 
         except Exception as e:
             logger.error("web_message_error", error=str(e))
-            await send_fn(json.dumps({
-                "type": "error",
-                "content": f"Error: {str(e)[:200]}",
-            }))
+            await send_fn(
+                json.dumps(
+                    {
+                        "type": "error",
+                        "content": f"Error: {str(e)[:200]}",
+                    }
+                )
+            )
 
     async def send_message(self, user_id: str, content: str, **kwargs: Any) -> None:
         """Send a message (no-op for web channel — responses go via WebSocket)."""
@@ -155,10 +175,11 @@ class WebChannel(BaseChannel):
 
 def register_web_routes(app: Any, channel: WebChannel) -> None:
     """Register web UI routes on the FastAPI app."""
+    from pathlib import Path
+
     from fastapi import WebSocket, WebSocketDisconnect
     from fastapi.responses import JSONResponse
     from fastapi.staticfiles import StaticFiles
-    from pathlib import Path
 
     # Serve static web UI files if they exist
     web_dist = Path(__file__).parent.parent.parent / "web" / "dist"

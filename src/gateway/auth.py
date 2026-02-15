@@ -11,7 +11,6 @@ All API requests to the gateway must be authenticated:
 from __future__ import annotations
 
 import hashlib
-import hmac
 import secrets
 import time
 from dataclasses import dataclass, field

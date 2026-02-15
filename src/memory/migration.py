@@ -81,9 +81,7 @@ class MigrationManager:
     def get_current_version(self) -> int:
         """Get the current schema version."""
         try:
-            row = self.conn.execute(
-                "SELECT MAX(version) as v FROM schema_version"
-            ).fetchone()
+            row = self.conn.execute("SELECT MAX(version) as v FROM schema_version").fetchone()
             return int(row[0]) if row and row[0] else 0
         except sqlite3.OperationalError:
             return 0
@@ -146,4 +144,5 @@ class MigrationManager:
 
 class MigrationError(Exception):
     """Raised for migration failures."""
+
     pass

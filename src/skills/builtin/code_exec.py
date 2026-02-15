@@ -118,7 +118,8 @@ class CodeExecSkill(BaseSkill):
 
         if language not in LANGUAGE_CONFIG:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unsupported language: {language}. Supported: {list(LANGUAGE_CONFIG.keys())}",
             )
 
@@ -175,9 +176,10 @@ class CodeExecSkill(BaseSkill):
                     stderr = stderr_bytes.decode("utf-8", errors="replace")
                     returncode = proc.returncode or 0
 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     return SkillResult(
-                        success=False, output="",
+                        success=False,
+                        output="",
                         error=f"Execution timed out after {config['timeout']}s",
                     )
 
@@ -204,9 +206,7 @@ class CodeExecSkill(BaseSkill):
                 pass
 
     @staticmethod
-    def _format_output(
-        stdout: str, stderr: str, returncode: int, language: str
-    ) -> str:
+    def _format_output(stdout: str, stderr: str, returncode: int, language: str) -> str:
         """Format execution output."""
         parts = []
 

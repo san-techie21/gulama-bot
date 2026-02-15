@@ -35,7 +35,11 @@ class GoogleDocsSkill(BaseSkill):
             description="Google Workspace — Docs, Sheets, Drive (read, create, edit, search)",
             version="1.0.0",
             author="gulama",
-            required_actions=[ActionType.NETWORK_REQUEST, ActionType.FILE_READ, ActionType.FILE_WRITE],
+            required_actions=[
+                ActionType.NETWORK_REQUEST,
+                ActionType.FILE_READ,
+                ActionType.FILE_WRITE,
+            ],
             is_builtin=True,
         )
 
@@ -51,15 +55,25 @@ class GoogleDocsSkill(BaseSkill):
                         "action": {
                             "type": "string",
                             "enum": [
-                                "docs_get", "docs_create", "docs_append",
-                                "sheets_read", "sheets_write",
-                                "drive_list", "drive_search",
+                                "docs_get",
+                                "docs_create",
+                                "docs_append",
+                                "sheets_read",
+                                "sheets_write",
+                                "drive_list",
+                                "drive_search",
                             ],
                         },
                         "document_id": {"type": "string", "description": "Google Doc or Sheet ID"},
                         "title": {"type": "string"},
-                        "content": {"type": "string", "description": "Text content to create/append"},
-                        "sheet_range": {"type": "string", "description": "Sheet range (e.g., 'Sheet1!A1:D10')"},
+                        "content": {
+                            "type": "string",
+                            "description": "Text content to create/append",
+                        },
+                        "sheet_range": {
+                            "type": "string",
+                            "description": "Sheet range (e.g., 'Sheet1!A1:D10')",
+                        },
                         "values": {
                             "type": "array",
                             "description": "2D array of values to write to sheet",
@@ -79,6 +93,7 @@ class GoogleDocsSkill(BaseSkill):
             return None
         try:
             from google.oauth2.service_account import Credentials
+
             scopes = [
                 "https://www.googleapis.com/auth/documents",
                 "https://www.googleapis.com/auth/spreadsheets",
@@ -111,7 +126,8 @@ class GoogleDocsSkill(BaseSkill):
             api_key = os.getenv("GOOGLE_API_KEY", "")
             if not api_key:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error="Google credentials not configured. Set GOOGLE_SERVICE_ACCOUNT_FILE or GOOGLE_API_KEY.",
                 )
 
@@ -119,7 +135,8 @@ class GoogleDocsSkill(BaseSkill):
             return await handler(creds=creds, **{k: v for k, v in kwargs.items() if k != "action"})
         except ImportError:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="Google API client required. Install: pip install google-api-python-client google-auth",
             )
         except Exception as e:
@@ -130,6 +147,7 @@ class GoogleDocsSkill(BaseSkill):
         if not document_id:
             return SkillResult(success=False, output="", error="document_id is required")
         from googleapiclient.discovery import build
+
         service = build("docs", "v1", credentials=creds)
         doc = service.documents().get(documentId=document_id).execute()
         title = doc.get("title", "Untitled")
@@ -142,8 +160,11 @@ class GoogleDocsSkill(BaseSkill):
         text = "".join(content_parts)
         return SkillResult(success=True, output=f"Title: {title}\n\n{text[:5000]}")
 
-    async def _docs_create(self, creds: Any = None, title: str = "", content: str = "", **_: Any) -> SkillResult:
+    async def _docs_create(
+        self, creds: Any = None, title: str = "", content: str = "", **_: Any
+    ) -> SkillResult:
         from googleapiclient.discovery import build
+
         service = build("docs", "v1", credentials=creds)
         doc = service.documents().create(body={"title": title or "Untitled"}).execute()
         doc_id = doc["documentId"]
@@ -158,25 +179,51 @@ class GoogleDocsSkill(BaseSkill):
             metadata={"document_id": doc_id},
         )
 
-    async def _docs_append(self, creds: Any = None, document_id: str = "", content: str = "", **_: Any) -> SkillResult:
+    async def _docs_append(
+        self, creds: Any = None, document_id: str = "", content: str = "", **_: Any
+    ) -> SkillResult:
         if not document_id or not content:
             return SkillResult(success=False, output="", error="document_id and content required")
         from googleapiclient.discovery import build
+
         service = build("docs", "v1", credentials=creds)
         doc = service.documents().get(documentId=document_id).execute()
         end_index = doc.get("body", {}).get("content", [{}])[-1].get("endIndex", 1) - 1
         service.documents().batchUpdate(
             documentId=document_id,
-            body={"requests": [{"insertText": {"location": {"index": max(1, end_index)}, "text": "\n" + content}}]},
+            body={
+                "requests": [
+                    {
+                        "insertText": {
+                            "location": {"index": max(1, end_index)},
+                            "text": "\n" + content,
+                        }
+                    }
+                ]
+            },
         ).execute()
         return SkillResult(success=True, output="Content appended to document.")
 
-    async def _sheets_read(self, creds: Any = None, document_id: str = "", sheet_range: str = "Sheet1!A1:Z100", **_: Any) -> SkillResult:
+    async def _sheets_read(
+        self,
+        creds: Any = None,
+        document_id: str = "",
+        sheet_range: str = "Sheet1!A1:Z100",
+        **_: Any,
+    ) -> SkillResult:
         if not document_id:
-            return SkillResult(success=False, output="", error="document_id (spreadsheet ID) required")
+            return SkillResult(
+                success=False, output="", error="document_id (spreadsheet ID) required"
+            )
         from googleapiclient.discovery import build
+
         service = build("sheets", "v4", credentials=creds)
-        result = service.spreadsheets().values().get(spreadsheetId=document_id, range=sheet_range).execute()
+        result = (
+            service.spreadsheets()
+            .values()
+            .get(spreadsheetId=document_id, range=sheet_range)
+            .execute()
+        )
         values = result.get("values", [])
         if not values:
             return SkillResult(success=True, output="No data found.")
@@ -185,11 +232,20 @@ class GoogleDocsSkill(BaseSkill):
             lines.append(" | ".join(str(c) for c in row))
         return SkillResult(success=True, output="\n".join(lines))
 
-    async def _sheets_write(self, creds: Any = None, document_id: str = "", sheet_range: str = "",
-                            values: list | None = None, **_: Any) -> SkillResult:
+    async def _sheets_write(
+        self,
+        creds: Any = None,
+        document_id: str = "",
+        sheet_range: str = "",
+        values: list | None = None,
+        **_: Any,
+    ) -> SkillResult:
         if not document_id or not sheet_range or not values:
-            return SkillResult(success=False, output="", error="document_id, sheet_range, and values required")
+            return SkillResult(
+                success=False, output="", error="document_id, sheet_range, and values required"
+            )
         from googleapiclient.discovery import build
+
         service = build("sheets", "v4", credentials=creds)
         service.spreadsheets().values().update(
             spreadsheetId=document_id,
@@ -201,24 +257,36 @@ class GoogleDocsSkill(BaseSkill):
 
     async def _drive_list(self, creds: Any = None, **_: Any) -> SkillResult:
         from googleapiclient.discovery import build
+
         service = build("drive", "v3", credentials=creds)
-        results = service.files().list(pageSize=20, fields="files(id,name,mimeType,modifiedTime)").execute()
+        results = (
+            service.files()
+            .list(pageSize=20, fields="files(id,name,mimeType,modifiedTime)")
+            .execute()
+        )
         files = results.get("files", [])
         lines = []
         for f in files:
-            lines.append(f"- {f['name']} ({f.get('mimeType', '')}) modified: {f.get('modifiedTime', '')[:10]}")
+            lines.append(
+                f"- {f['name']} ({f.get('mimeType', '')}) modified: {f.get('modifiedTime', '')[:10]}"
+            )
         return SkillResult(success=True, output="\n".join(lines) or "No files found.")
 
     async def _drive_search(self, creds: Any = None, query: str = "", **_: Any) -> SkillResult:
         if not query:
             return SkillResult(success=False, output="", error="query is required")
         from googleapiclient.discovery import build
+
         service = build("drive", "v3", credentials=creds)
-        results = service.files().list(
-            q=f"name contains '{query}'",
-            pageSize=20,
-            fields="files(id,name,mimeType,modifiedTime)",
-        ).execute()
+        results = (
+            service.files()
+            .list(
+                q=f"name contains '{query}'",
+                pageSize=20,
+                fields="files(id,name,mimeType,modifiedTime)",
+            )
+            .execute()
+        )
         files = results.get("files", [])
         lines = [f"- {f['name']} (ID: {f['id'][:8]}...) {f.get('mimeType', '')}" for f in files]
         return SkillResult(success=True, output="\n".join(lines) or "No files found.")

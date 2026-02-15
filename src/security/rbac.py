@@ -19,7 +19,7 @@ import hmac
 import os
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from src.utils.logging import get_logger
@@ -30,6 +30,7 @@ logger = get_logger("rbac")
 @dataclass
 class Permission:
     """A single permission definition."""
+
     name: str
     description: str
     category: str  # "chat", "tools", "admin", "data", "system"
@@ -41,7 +42,6 @@ PERMISSIONS: dict[str, Permission] = {
     "chat.send": Permission("chat.send", "Send messages", "chat"),
     "chat.stream": Permission("chat.stream", "Use streaming responses", "chat"),
     "chat.history": Permission("chat.history", "View chat history", "chat"),
-
     # Tool permissions
     "tools.execute": Permission("tools.execute", "Execute tools/skills", "tools"),
     "tools.shell": Permission("tools.shell", "Execute shell commands", "tools"),
@@ -51,20 +51,17 @@ PERMISSIONS: dict[str, Permission] = {
     "tools.browser": Permission("tools.browser", "Use browser automation", "tools"),
     "tools.email": Permission("tools.email", "Send/read emails", "tools"),
     "tools.code_exec": Permission("tools.code_exec", "Execute code", "tools"),
-
     # Admin permissions
     "admin.users": Permission("admin.users", "Manage users", "admin"),
     "admin.roles": Permission("admin.roles", "Manage roles", "admin"),
     "admin.config": Permission("admin.config", "Change configuration", "admin"),
     "admin.skills": Permission("admin.skills", "Install/remove skills", "admin"),
     "admin.vault": Permission("admin.vault", "Access secrets vault", "admin"),
-
     # Data permissions
     "data.own": Permission("data.own", "View own data", "data"),
     "data.all": Permission("data.all", "View all users' data", "data"),
     "data.export": Permission("data.export", "Export data", "data"),
     "data.audit": Permission("data.audit", "View audit logs", "data"),
-
     # System permissions
     "system.start": Permission("system.start", "Start/stop the system", "system"),
     "system.monitor": Permission("system.monitor", "View system status", "system"),
@@ -75,6 +72,7 @@ PERMISSIONS: dict[str, Permission] = {
 @dataclass
 class Role:
     """A role with a set of permissions."""
+
     name: str
     description: str
     permissions: set[str] = field(default_factory=set)
@@ -93,11 +91,21 @@ BUILT_IN_ROLES: dict[str, Role] = {
         name="operator",
         description="Operations — all tools, manage skills, view audit",
         permissions={
-            "chat.send", "chat.stream", "chat.history",
-            "tools.execute", "tools.shell", "tools.file_read", "tools.file_write",
-            "tools.network", "tools.browser", "tools.email", "tools.code_exec",
+            "chat.send",
+            "chat.stream",
+            "chat.history",
+            "tools.execute",
+            "tools.shell",
+            "tools.file_read",
+            "tools.file_write",
+            "tools.network",
+            "tools.browser",
+            "tools.email",
+            "tools.code_exec",
             "admin.skills",
-            "data.own", "data.all", "data.audit",
+            "data.own",
+            "data.all",
+            "data.audit",
             "system.monitor",
         },
         is_system=True,
@@ -106,8 +114,12 @@ BUILT_IN_ROLES: dict[str, Role] = {
         name="user",
         description="Standard user — chat and approved tools",
         permissions={
-            "chat.send", "chat.stream", "chat.history",
-            "tools.execute", "tools.file_read", "tools.network",
+            "chat.send",
+            "chat.stream",
+            "chat.history",
+            "tools.execute",
+            "tools.file_read",
+            "tools.network",
             "data.own",
             "system.monitor",
         },
@@ -117,7 +129,8 @@ BUILT_IN_ROLES: dict[str, Role] = {
         name="viewer",
         description="Read-only — chat but no tools",
         permissions={
-            "chat.send", "chat.history",
+            "chat.send",
+            "chat.history",
             "data.own",
         },
         is_system=True,
@@ -136,6 +149,7 @@ BUILT_IN_ROLES: dict[str, Role] = {
 @dataclass
 class User:
     """A Gulama user."""
+
     id: str
     username: str
     email: str = ""
@@ -202,7 +216,7 @@ class RBACManager:
             role_name=role_name,
             password_hash=password_hash,
             salt=salt,
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
         )
 
         self._users[user.id] = user
@@ -217,7 +231,7 @@ class RBACManager:
 
         expected_hash = self._hash_password(password, user.salt)
         if hmac.compare_digest(expected_hash, user.password_hash):
-            user.last_login = datetime.now(timezone.utc).isoformat()
+            user.last_login = datetime.now(UTC).isoformat()
             return user
         return None
 
@@ -305,9 +319,7 @@ class RBACManager:
 
     # --- Role Management ---
 
-    def create_role(
-        self, name: str, description: str, permissions: list[str]
-    ) -> Role:
+    def create_role(self, name: str, description: str, permissions: list[str]) -> Role:
         """Create a custom role."""
         if name in self._roles:
             raise RBACError(f"Role '{name}' already exists")
@@ -363,10 +375,14 @@ class RBACManager:
         return hashlib.scrypt(
             password.encode(),
             salt=bytes.fromhex(salt),
-            n=2**14, r=8, p=1, dklen=64,
+            n=2**14,
+            r=8,
+            p=1,
+            dklen=64,
         ).hex()
 
 
 class RBACError(Exception):
     """Raised for RBAC-related errors."""
+
     pass

@@ -13,7 +13,6 @@ Requires:
 
 from __future__ import annotations
 
-import base64
 import os
 import tempfile
 from pathlib import Path
@@ -47,6 +46,7 @@ class VoiceSkill(BaseSkill):
             return
         try:
             from dotenv import load_dotenv
+
             load_dotenv()
         except ImportError:
             pass
@@ -121,7 +121,8 @@ class VoiceSkill(BaseSkill):
         handler = dispatch.get(action)
         if not handler:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unknown voice action: {action}. Use: transcribe, speak, list_voices",
             )
 
@@ -131,7 +132,8 @@ class VoiceSkill(BaseSkill):
             return await handler(**{k: v for k, v in kwargs.items() if k != "action"})
         except ImportError as e:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Missing dependency: {str(e)}. Install required packages.",
             )
         except Exception as e:
@@ -139,14 +141,19 @@ class VoiceSkill(BaseSkill):
             return SkillResult(success=False, output="", error=f"Voice error: {str(e)[:300]}")
 
     async def _transcribe(
-        self, audio_path: str = "", language: str = "en", **_: Any,
+        self,
+        audio_path: str = "",
+        language: str = "en",
+        **_: Any,
     ) -> SkillResult:
         """Convert audio to text using Whisper."""
         if not audio_path:
             return SkillResult(success=False, output="", error="audio_path is required")
 
         if not Path(audio_path).exists():
-            return SkillResult(success=False, output="", error=f"Audio file not found: {audio_path}")
+            return SkillResult(
+                success=False, output="", error=f"Audio file not found: {audio_path}"
+            )
 
         if self._stt_backend == "whisper_local":
             return await self._transcribe_whisper_local(audio_path, language)
@@ -156,7 +163,8 @@ class VoiceSkill(BaseSkill):
             return await self._transcribe_deepgram(audio_path, language)
         else:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unknown STT backend: {self._stt_backend}",
             )
 
@@ -193,7 +201,8 @@ class VoiceSkill(BaseSkill):
 
             if response.status_code != 200:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"Whisper API error: {response.status_code}",
                 )
 
@@ -226,7 +235,8 @@ class VoiceSkill(BaseSkill):
 
             if response.status_code != 200:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"Deepgram API error: {response.status_code}",
                 )
 
@@ -238,7 +248,8 @@ class VoiceSkill(BaseSkill):
                 .get("transcript", "")
             )
             return SkillResult(
-                success=True, output=text,
+                success=True,
+                output=text,
                 metadata={"backend": "deepgram", "language": language},
             )
 
@@ -265,7 +276,8 @@ class VoiceSkill(BaseSkill):
             return await self._speak_gtts(text, output_path, language)
         else:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unknown TTS backend: {self._tts_backend}",
             )
 
@@ -298,7 +310,8 @@ class VoiceSkill(BaseSkill):
 
             if response.status_code != 200:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"ElevenLabs API error: {response.status_code}",
                 )
 
@@ -337,7 +350,8 @@ class VoiceSkill(BaseSkill):
 
             if response.status_code != 200:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"OpenAI TTS error: {response.status_code}",
                 )
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.security.team import TeamManager, TeamError
+from src.security.team import TeamError, TeamManager
 
 
 class TestTeamManager:

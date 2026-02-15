@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from src.utils.logging import get_logger
@@ -24,6 +24,7 @@ logger = get_logger("team")
 @dataclass
 class TeamMember:
     """A team member with a specific team role."""
+
     user_id: str
     team_role: str = "member"  # "owner", "admin", "member", "viewer"
     joined_at: str = ""
@@ -33,6 +34,7 @@ class TeamMember:
 @dataclass
 class Team:
     """A Gulama team / workspace."""
+
     id: str
     name: str
     description: str = ""
@@ -101,12 +103,10 @@ class TeamManager:
         self._user_teams: dict[str, set[str]] = {}  # user_id -> set of team_ids
         self._invitations: dict[str, dict[str, Any]] = {}  # invite_code -> details
 
-    def create_team(
-        self, name: str, owner_id: str, description: str = ""
-    ) -> Team:
+    def create_team(self, name: str, owner_id: str, description: str = "") -> Team:
         """Create a new team."""
         team_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         team = Team(
             id=team_id,
@@ -163,7 +163,7 @@ class TeamManager:
         member = TeamMember(
             user_id=user_id,
             team_role=role,
-            joined_at=datetime.now(timezone.utc).isoformat(),
+            joined_at=datetime.now(UTC).isoformat(),
             invited_by=invited_by,
         )
 
@@ -239,9 +239,7 @@ class TeamManager:
             new_owner=new_owner_id,
         )
 
-    def create_invitation(
-        self, team_id: str, invited_by: str, role: str = "member"
-    ) -> str:
+    def create_invitation(self, team_id: str, invited_by: str, role: str = "member") -> str:
         """Create a team invitation code."""
         team = self._teams.get(team_id)
         if not team:
@@ -252,7 +250,7 @@ class TeamManager:
             "team_id": team_id,
             "invited_by": invited_by,
             "role": role,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "used": False,
         }
 
@@ -301,17 +299,17 @@ class TeamManager:
             team = self._teams.get(tid)
             if team and team.is_active:
                 member = team.members.get(user_id)
-                result.append({
-                    "team_id": team.id,
-                    "name": team.name,
-                    "role": member.team_role if member else "unknown",
-                    "member_count": len(team.members),
-                })
+                result.append(
+                    {
+                        "team_id": team.id,
+                        "name": team.name,
+                        "role": member.team_role if member else "unknown",
+                        "member_count": len(team.members),
+                    }
+                )
         return result
 
-    def check_team_permission(
-        self, team_id: str, user_id: str, permission: str
-    ) -> bool:
+    def check_team_permission(self, team_id: str, user_id: str, permission: str) -> bool:
         """Check if a user has a specific team permission."""
         team = self._teams.get(team_id)
         if not team:
@@ -358,4 +356,5 @@ class TeamManager:
 
 class TeamError(Exception):
     """Raised for team-related errors."""
+
     pass

@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-import time
-
-import pytest
-
 from src.security.threat_detector import (
     ThreatCategory,
     ThreatDetector,
@@ -85,9 +81,7 @@ class TestThreatDetector:
 
     def test_privilege_escalation_detection(self):
         """Tool usage with privilege escalation indicators should be detected."""
-        event = self.detector.check_tool_usage(
-            "user1", "shell_exec", {"command": "sudo rm -rf /"}
-        )
+        event = self.detector.check_tool_usage("user1", "shell_exec", {"command": "sudo rm -rf /"})
         assert event is not None
         assert event.category == ThreatCategory.PRIVILEGE_ESCALATION
 
@@ -126,9 +120,7 @@ class TestThreatDetector:
     def test_threat_summary_alert_on_high(self):
         """Summary should show alert when unmitigated high threats exist."""
         # Trigger a privilege escalation (high, not auto-mitigated)
-        self.detector.check_tool_usage(
-            "attacker", "shell_exec", {"command": "sudo bash"}
-        )
+        self.detector.check_tool_usage("attacker", "shell_exec", {"command": "sudo bash"})
         summary = self.detector.get_threat_summary()
         assert summary["status"] == "alert"
 

@@ -13,8 +13,8 @@ Supports:
 from __future__ import annotations
 
 import asyncio
-import hmac
 import hashlib
+import hmac
 import time
 from typing import Any
 
@@ -95,11 +95,14 @@ class SlackChannel(BaseChannel):
             return False
 
         sig_basestring = f"v0:{timestamp}:{body.decode('utf-8')}"
-        expected = "v0=" + hmac.new(
-            self.signing_secret.encode(),
-            sig_basestring.encode(),
-            hashlib.sha256,
-        ).hexdigest()
+        expected = (
+            "v0="
+            + hmac.new(
+                self.signing_secret.encode(),
+                sig_basestring.encode(),
+                hashlib.sha256,
+            ).hexdigest()
+        )
 
         return hmac.compare_digest(expected, signature)
 
@@ -161,17 +164,13 @@ class SlackChannel(BaseChannel):
         # Process in background and send response via webhook
         response_url = payload.get("response_url")
         if response_url:
-            asyncio.create_task(
-                self._async_slash_response(text, user, response_url)
-            )
+            asyncio.create_task(self._async_slash_response(text, user, response_url))
             return "Thinking..."
 
         response = await self._get_response(text, user)
         return response[:3000]
 
-    async def _async_slash_response(
-        self, text: str, user: str, response_url: str
-    ) -> None:
+    async def _async_slash_response(self, text: str, user: str, response_url: str) -> None:
         """Send async response to slash command."""
         response = await self._get_response(text, user)
         async with httpx.AsyncClient() as client:
@@ -198,18 +197,14 @@ class SlackChannel(BaseChannel):
             if self._message_handler:
                 return await self._message_handler(content, user_id, "slack")
             elif self._agent_brain:
-                result = await self._agent_brain.process_message(
-                    content, channel="slack"
-                )
+                result = await self._agent_brain.process_message(content, channel="slack")
                 return result.get("response", "No response.")
             return "Bot is not configured."
         except Exception as e:
             logger.error("slack_response_failed", error=str(e))
             return f"Error: {str(e)[:100]}"
 
-    async def _send_to_channel(
-        self, channel: str, text: str, thread_ts: str | None = None
-    ) -> None:
+    async def _send_to_channel(self, channel: str, text: str, thread_ts: str | None = None) -> None:
         """Send a message to a Slack channel."""
         client = await self._get_http_client()
 

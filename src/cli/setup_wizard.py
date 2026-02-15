@@ -24,7 +24,6 @@ from src.constants import (
     VAULT_FILE,
 )
 
-
 # Supported LLM providers for the wizard
 LLM_PROVIDERS = [
     ("anthropic", "Anthropic (Claude)", "claude-sonnet-4-5-20250929"),
@@ -67,9 +66,7 @@ class SetupWizard:
         )
 
         if VAULT_FILE.exists() and not self.force:
-            self.console.print(
-                "[yellow]Vault already exists. Use --force to re-initialize.[/]"
-            )
+            self.console.print("[yellow]Vault already exists. Use --force to re-initialize.[/]")
             return
 
         # Step 1: Create vault with master password
@@ -144,7 +141,7 @@ class SetupWizard:
         )
 
         table = Table(show_header=False, box=None, padding=(0, 2))
-        for i, (code, name, default_model) in enumerate(LLM_PROVIDERS, 1):
+        for i, (_code, name, default_model) in enumerate(LLM_PROVIDERS, 1):
             table.add_row(f"  [{i}]", f"[cyan]{name}[/]", f"[dim]{default_model}[/]")
         self.console.print(table)
 
@@ -194,9 +191,7 @@ class SetupWizard:
     def _step_autonomy(self) -> int:
         """Choose autonomy level."""
         self.console.print("[bold blue]Step 3/5:[/] Autonomy Level\n")
-        self.console.print(
-            "How much freedom should Gulama have?\n"
-        )
+        self.console.print("How much freedom should Gulama have?\n")
 
         for level, desc in AUTONOMY_LEVELS:
             marker = " (default)" if level == 2 else ""

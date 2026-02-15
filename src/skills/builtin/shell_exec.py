@@ -41,16 +41,20 @@ class ShellExecSkill(BaseSkill):
 
         # Validate command
         from src.security.input_validator import InputValidator
+
         validator = InputValidator()
         result = validator.validate_command(command)
 
         if not result.valid:
             return SkillResult(
-                success=False, output="", error=result.blocked_reason,
+                success=False,
+                output="",
+                error=result.blocked_reason,
             )
 
         # Execute in sandbox
         from src.security.sandbox import Sandbox, SandboxConfig
+
         sandbox = Sandbox(config=SandboxConfig(timeout=timeout))
 
         sandbox_result = await sandbox.execute(command=result.sanitized, cwd=cwd)

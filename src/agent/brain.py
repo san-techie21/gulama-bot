@@ -16,7 +16,8 @@ The brain:
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from src.agent.context_builder import ContextBuilder
 from src.agent.llm_router import LLMRouter
@@ -133,7 +134,8 @@ class AgentBrain:
             # Create or continue conversation
             if not conversation_id:
                 conversation_id = store.create_conversation(
-                    channel=channel, user_id=user_id,
+                    channel=channel,
+                    user_id=user_id,
                 )
 
             # Store user message
@@ -214,7 +216,11 @@ class AgentBrain:
 
                     # Parse arguments
                     try:
-                        arguments = json.loads(func["arguments"]) if isinstance(func["arguments"], str) else func["arguments"]
+                        arguments = (
+                            json.loads(func["arguments"])
+                            if isinstance(func["arguments"], str)
+                            else func["arguments"]
+                        )
                     except (json.JSONDecodeError, TypeError):
                         arguments = {}
 
@@ -249,11 +255,13 @@ class AgentBrain:
                             tool_output = f"[ERROR] {error}"
 
                     # Inject tool result back into conversation
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call_id,
-                        "content": tool_output,
-                    })
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tool_call_id,
+                            "content": tool_output,
+                        }
+                    )
 
                     logger.info(
                         "tool_result",
@@ -350,7 +358,8 @@ class AgentBrain:
         try:
             if not conversation_id:
                 conversation_id = store.create_conversation(
-                    channel=channel, user_id=user_id,
+                    channel=channel,
+                    user_id=user_id,
                 )
 
             store.add_message(conversation_id, role="user", content=message)
@@ -424,7 +433,11 @@ class AgentBrain:
                     tool_call_id = tool_call["id"]
 
                     try:
-                        arguments = json.loads(func["arguments"]) if isinstance(func["arguments"], str) else func["arguments"]
+                        arguments = (
+                            json.loads(func["arguments"])
+                            if isinstance(func["arguments"], str)
+                            else func["arguments"]
+                        )
                     except (json.JSONDecodeError, TypeError):
                         arguments = {}
 
@@ -455,11 +468,13 @@ class AgentBrain:
                     else:
                         tool_output = f"[ERROR] {exec_result.get('error', 'Unknown error')}"
 
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call_id,
-                        "content": tool_output,
-                    })
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tool_call_id,
+                            "content": tool_output,
+                        }
+                    )
 
             # Store and finalize
             if response_text:
@@ -560,6 +575,7 @@ class AgentBrain:
         # Load .env file if present
         try:
             from dotenv import load_dotenv
+
             load_dotenv()
         except ImportError:
             pass

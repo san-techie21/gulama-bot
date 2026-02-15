@@ -22,7 +22,6 @@ from src.security.policy_engine import PolicyEngine
 from src.skills.base import BaseSkill, SkillMetadata, SkillResult
 from src.skills.registry import SkillRegistry
 
-
 # ── Fixtures ──────────────────────────────────────────
 
 
@@ -470,9 +469,7 @@ class TestSecurityPipeline:
 
         class LeakySkill(BaseSkill):
             def get_metadata(self):
-                return SkillMetadata(
-                    name="leaky", description="test", is_builtin=True
-                )
+                return SkillMetadata(name="leaky", description="test", is_builtin=True)
 
             async def execute(self, **kwargs):
                 # Try to leak a secret-looking value
@@ -540,9 +537,7 @@ class TestStreamingIntegration:
         )
 
         mock_ctx = MagicMock()
-        mock_ctx.build_messages = MagicMock(
-            return_value=[{"role": "user", "content": "test"}]
-        )
+        mock_ctx.build_messages = MagicMock(return_value=[{"role": "user", "content": "test"}])
 
         mock_store = MagicMock()
         mock_store.open = MagicMock()

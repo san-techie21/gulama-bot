@@ -170,6 +170,7 @@ class VoiceWakeEngine:
                 self._handle_wake()
                 # Debounce — wait before next detection
                 import time
+
                 time.sleep(3)
 
     def _handle_wake(self) -> None:

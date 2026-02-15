@@ -11,12 +11,9 @@ Features:
 from __future__ import annotations
 
 import asyncio
-import sys
 from typing import Any
 
 from rich.console import Console
-from rich.live import Live
-from rich.markdown import Markdown
 from rich.panel import Panel
 
 from src.channels.base import BaseChannel
@@ -110,9 +107,7 @@ class CLIChannel(BaseChannel):
                             print(chunk["content"], end="")
                         print()  # Newline after response
                         if tokens > 0:
-                            console.print(
-                                f"[dim]({tokens} tokens, ${cost:.4f})[/]"
-                            )
+                            console.print(f"[dim]({tokens} tokens, ${cost:.4f})[/]")
                     elif chunk["type"] == "error":
                         console.print(f"\n[red]Error: {chunk['content']}[/]")
 
@@ -130,9 +125,7 @@ class CLIChannel(BaseChannel):
             return False
 
         elif cmd == "/help":
-            table_str = "\n".join(
-                f"  [cyan]{k}[/]  {v}" for k, v in CLI_COMMANDS.items()
-            )
+            table_str = "\n".join(f"  [cyan]{k}[/]  {v}" for k, v in CLI_COMMANDS.items())
             console.print(f"\n[bold]Available commands:[/]\n{table_str}\n")
 
         elif cmd == "/cost":

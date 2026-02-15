@@ -12,7 +12,6 @@ All operations go through the policy engine and sandbox.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -43,11 +42,14 @@ class FileManagerSkill(BaseSkill):
 
         # Validate path
         from src.security.input_validator import InputValidator
+
         validator = InputValidator()
         result = validator.validate_path(path)
         if not result.valid:
             return SkillResult(
-                success=False, output="", error=result.blocked_reason,
+                success=False,
+                output="",
+                error=result.blocked_reason,
             )
 
         match operation:
@@ -60,7 +62,8 @@ class FileManagerSkill(BaseSkill):
                 return await self._list_dir(result.sanitized)
             case _:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"Unknown operation: {operation}",
                 )
 
@@ -74,7 +77,8 @@ class FileManagerSkill(BaseSkill):
                 return SkillResult(success=False, output="", error="Not a file")
             if p.stat().st_size > 1024 * 1024:  # 1MB limit
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error="File too large (>1MB). Use a more specific tool.",
                 )
             content = p.read_text(encoding="utf-8", errors="replace")
@@ -89,7 +93,8 @@ class FileManagerSkill(BaseSkill):
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(content, encoding="utf-8")
             return SkillResult(
-                success=True, output=f"Written {len(content)} bytes to {path}",
+                success=True,
+                output=f"Written {len(content)} bytes to {path}",
             )
         except Exception as e:
             return SkillResult(success=False, output="", error=str(e))

@@ -15,8 +15,6 @@ Requires: pip install mcp
 
 from __future__ import annotations
 
-import asyncio
-import json
 from typing import Any
 
 from src.security.policy_engine import ActionType
@@ -66,7 +64,13 @@ class MCPBridgeSkill(BaseSkill):
                     "properties": {
                         "action": {
                             "type": "string",
-                            "enum": ["list_servers", "connect", "list_tools", "call_tool", "read_resource"],
+                            "enum": [
+                                "list_servers",
+                                "connect",
+                                "list_tools",
+                                "call_tool",
+                                "read_resource",
+                            ],
                             "description": "MCP action to perform",
                         },
                         "server_name": {
@@ -119,7 +123,8 @@ class MCPBridgeSkill(BaseSkill):
         handler = dispatch.get(action)
         if not handler:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unknown MCP action: {action}",
             )
 
@@ -127,7 +132,8 @@ class MCPBridgeSkill(BaseSkill):
             return await handler(**{k: v for k, v in kwargs.items() if k != "action"})
         except ImportError:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="MCP SDK not installed. Run: pip install mcp",
             )
         except Exception as e:
@@ -175,7 +181,8 @@ class MCPBridgeSkill(BaseSkill):
             from mcp.client.stdio import stdio_client
         except ImportError:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="MCP SDK not installed. Run: pip install mcp",
             )
 
@@ -207,7 +214,8 @@ class MCPBridgeSkill(BaseSkill):
                 )
             except Exception as e:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"SSE connection failed: {str(e)[:200]}",
                 )
 
@@ -246,12 +254,14 @@ class MCPBridgeSkill(BaseSkill):
                 )
             except Exception as e:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"Stdio connection failed: {str(e)[:200]}",
                 )
 
         return SkillResult(
-            success=False, output="",
+            success=False,
+            output="",
             error="Either 'command' (for stdio) or 'url' (for SSE) is required",
         )
 
@@ -263,7 +273,8 @@ class MCPBridgeSkill(BaseSkill):
         conn = self._connections.get(server_name)
         if not conn:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Not connected to '{server_name}'. Connect first.",
             )
 
@@ -300,7 +311,8 @@ class MCPBridgeSkill(BaseSkill):
         conn = self._connections.get(server_name)
         if not conn:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Not connected to '{server_name}'",
             )
 
@@ -338,7 +350,8 @@ class MCPBridgeSkill(BaseSkill):
         conn = self._connections.get(server_name)
         if not conn:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Not connected to '{server_name}'",
             )
 

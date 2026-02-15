@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
-import pytest
-
 
 def is_valid_ws_origin(origin: str) -> bool:
     """Check if a WebSocket origin is valid (loopback only)."""

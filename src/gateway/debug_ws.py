@@ -25,7 +25,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections import deque
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -87,7 +87,7 @@ class DebugEventBus:
 
         event = {
             "type": event_type,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             **(data or {}),
         }
 
@@ -116,57 +116,77 @@ class DebugEventBus:
 # Convenience functions for publishing debug events
 async def debug_tool_call(skill: str, args: dict[str, Any], result: str = "") -> None:
     """Publish a tool call debug event."""
-    await DebugEventBus.get().publish("tool_call", {
-        "skill": skill,
-        "args": {k: str(v)[:100] for k, v in args.items()},
-        "result_preview": result[:200],
-    })
+    await DebugEventBus.get().publish(
+        "tool_call",
+        {
+            "skill": skill,
+            "args": {k: str(v)[:100] for k, v in args.items()},
+            "result_preview": result[:200],
+        },
+    )
 
 
-async def debug_policy_decision(action: str, resource: str, decision: str, policy: str = "") -> None:
+async def debug_policy_decision(
+    action: str, resource: str, decision: str, policy: str = ""
+) -> None:
     """Publish a policy engine decision debug event."""
-    await DebugEventBus.get().publish("policy_decision", {
-        "action": action,
-        "resource": resource[:200],
-        "decision": decision,
-        "policy": policy,
-    })
+    await DebugEventBus.get().publish(
+        "policy_decision",
+        {
+            "action": action,
+            "resource": resource[:200],
+            "decision": decision,
+            "policy": policy,
+        },
+    )
 
 
 async def debug_token_usage(tokens: int, cost_usd: float, model: str = "") -> None:
     """Publish a token usage debug event."""
-    await DebugEventBus.get().publish("token_usage", {
-        "tokens": tokens,
-        "cost_usd": round(cost_usd, 6),
-        "model": model,
-    })
+    await DebugEventBus.get().publish(
+        "token_usage",
+        {
+            "tokens": tokens,
+            "cost_usd": round(cost_usd, 6),
+            "model": model,
+        },
+    )
 
 
 async def debug_memory_op(operation: str, key: str = "", size: int = 0) -> None:
     """Publish a memory operation debug event."""
-    await DebugEventBus.get().publish("memory_op", {
-        "operation": operation,
-        "key": key[:100],
-        "size": size,
-    })
+    await DebugEventBus.get().publish(
+        "memory_op",
+        {
+            "operation": operation,
+            "key": key[:100],
+            "size": size,
+        },
+    )
 
 
 async def debug_sub_agent(agent_id: str, status: str, message: str = "") -> None:
     """Publish a sub-agent activity debug event."""
-    await DebugEventBus.get().publish("sub_agent", {
-        "agent_id": agent_id,
-        "status": status,
-        "message": message[:200],
-    })
+    await DebugEventBus.get().publish(
+        "sub_agent",
+        {
+            "agent_id": agent_id,
+            "status": status,
+            "message": message[:200],
+        },
+    )
 
 
 async def debug_audit(action: str, resource: str, decision: str) -> None:
     """Publish an audit log debug event."""
-    await DebugEventBus.get().publish("audit", {
-        "action": action,
-        "resource": resource[:200],
-        "decision": decision,
-    })
+    await DebugEventBus.get().publish(
+        "audit",
+        {
+            "action": action,
+            "resource": resource[:200],
+            "decision": decision,
+        },
+    )
 
 
 # ── WebSocket endpoint ──────────────────────────────────────────
@@ -213,11 +233,13 @@ async def websocket_debug(websocket: WebSocket) -> None:
 
     # Send initial history
     history = bus.get_history(50)
-    await websocket.send_json({
-        "type": "connected",
-        "history_count": len(history),
-        "subscriber_count": bus.subscriber_count,
-    })
+    await websocket.send_json(
+        {
+            "type": "connected",
+            "history_count": len(history),
+            "subscriber_count": bus.subscriber_count,
+        }
+    )
 
     # Two concurrent tasks: read commands, stream events
     async def stream_events() -> None:
@@ -225,7 +247,7 @@ async def websocket_debug(websocket: WebSocket) -> None:
             try:
                 event = await asyncio.wait_for(queue.get(), timeout=30)
                 await websocket.send_json(event)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Send heartbeat
                 await websocket.send_json({"type": "heartbeat"})
             except Exception:
@@ -243,16 +265,20 @@ async def websocket_debug(websocket: WebSocket) -> None:
                 elif cmd_type == "history":
                     limit = data.get("limit", 50)
                     history = bus.get_history(min(limit, 200))
-                    await websocket.send_json({
-                        "type": "history",
-                        "events": history,
-                    })
+                    await websocket.send_json(
+                        {
+                            "type": "history",
+                            "events": history,
+                        }
+                    )
                 elif cmd_type == "stats":
-                    await websocket.send_json({
-                        "type": "stats",
-                        "subscriber_count": bus.subscriber_count,
-                        "history_size": len(bus._history),
-                    })
+                    await websocket.send_json(
+                        {
+                            "type": "stats",
+                            "subscriber_count": bus.subscriber_count,
+                            "history_size": len(bus._history),
+                        }
+                    )
 
             except (WebSocketDisconnect, Exception):
                 break

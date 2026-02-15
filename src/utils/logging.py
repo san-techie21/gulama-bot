@@ -16,8 +16,7 @@ def _redact_secrets(_, __, event_dict: dict[str, Any]) -> dict[str, Any]:
             event_dict[key] = _redact_string(value)
         elif isinstance(value, dict):
             event_dict[key] = {
-                k: _redact_string(v) if isinstance(v, str) else v
-                for k, v in value.items()
+                k: _redact_string(v) if isinstance(v, str) else v for k, v in value.items()
             }
     return event_dict
 
@@ -62,9 +61,7 @@ def setup_logging(level: str = "INFO", json_format: bool = True) -> None:
 
     structlog.configure(
         processors=processors,
-        wrapper_class=structlog.make_filtering_bound_logger(
-            _level_to_int(level)
-        ),
+        wrapper_class=structlog.make_filtering_bound_logger(_level_to_int(level)),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
         cache_logger_on_first_use=True,

@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Any
 
 from src.constants import SENSITIVE_PATTERNS
 from src.utils.logging import get_logger
@@ -25,6 +24,7 @@ logger = get_logger("egress_filter")
 @dataclass
 class EgressDecision:
     """Result of egress filtering."""
+
     allowed: bool
     reason: str
     blocked_patterns: list[str]
@@ -42,16 +42,18 @@ class EgressFilter:
         self._canary_tokens: set[str] = set()
 
         # Load default blocked domains
-        self._blocked_domains.update([
-            "pastebin.com",
-            "hastebin.com",
-            "paste.ee",
-            "ghostbin.co",
-            "0x0.st",       # File hosting
-            "file.io",
-            "transfer.sh",
-            "temp.sh",
-        ])
+        self._blocked_domains.update(
+            [
+                "pastebin.com",
+                "hastebin.com",
+                "paste.ee",
+                "ghostbin.co",
+                "0x0.st",  # File hosting
+                "file.io",
+                "transfer.sh",
+                "temp.sh",
+            ]
+        )
 
     def check_request(
         self,

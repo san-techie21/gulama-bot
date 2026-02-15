@@ -13,12 +13,12 @@ from __future__ import annotations
 
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from src.constants import MEMORY_DB
-from src.memory.schema import CURRENT_SCHEMA_VERSION, SCHEMA_SQL
+from src.memory.schema import SCHEMA_SQL
 from src.utils.logging import get_logger
 
 logger = get_logger("memory_store")
@@ -57,7 +57,7 @@ class MemoryStore:
                 logger.warning(
                     "sqlcipher_not_available",
                     msg="SQLCipher not available. Using standard SQLite. "
-                        "For full encryption, install sqlcipher3.",
+                    "For full encryption, install sqlcipher3.",
                 )
 
         # Initialize schema
@@ -80,9 +80,7 @@ class MemoryStore:
 
     # --- Conversations ---
 
-    def create_conversation(
-        self, channel: str, user_id: str | None = None
-    ) -> str:
+    def create_conversation(self, channel: str, user_id: str | None = None) -> str:
         """Create a new conversation and return its ID."""
         conv_id = _new_id()
         self.conn.execute(
@@ -209,14 +207,25 @@ class MemoryStore:
             "INSERT INTO cost_tracking "
             "(id, timestamp, provider, model, input_tokens, output_tokens, cost_usd, channel, skill, conversation_id) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (cost_id, _now(), provider, model, input_tokens, output_tokens, cost_usd, channel, skill, conversation_id),
+            (
+                cost_id,
+                _now(),
+                provider,
+                model,
+                input_tokens,
+                output_tokens,
+                cost_usd,
+                channel,
+                skill,
+                conversation_id,
+            ),
         )
         self.conn.commit()
         return cost_id
 
     def get_today_cost(self) -> float:
         """Get total USD cost for today."""
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
         row = self.conn.execute(
             "SELECT COALESCE(SUM(cost_usd), 0.0) as total FROM cost_tracking "
             "WHERE date(timestamp) = ?",
@@ -243,9 +252,7 @@ class MemoryStore:
     def get_schema_version(self) -> int:
         """Get current schema version."""
         try:
-            row = self.conn.execute(
-                "SELECT MAX(version) as v FROM schema_version"
-            ).fetchone()
+            row = self.conn.execute("SELECT MAX(version) as v FROM schema_version").fetchone()
             return int(row["v"]) if row else 0
         except sqlite3.OperationalError:
             return 0
@@ -261,6 +268,7 @@ class MemoryStore:
 
 class MemoryStoreError(Exception):
     """Raised for memory store errors."""
+
     pass
 
 
@@ -271,4 +279,4 @@ def _new_id() -> str:
 
 def _now() -> str:
     """Get current UTC timestamp as ISO string."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()

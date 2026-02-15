@@ -12,11 +12,11 @@ Supports:
 from __future__ import annotations
 
 import asyncio
-import re
 import uuid
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Coroutine
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from src.utils.logging import get_logger
 
@@ -26,6 +26,7 @@ logger = get_logger("scheduler")
 @dataclass
 class ScheduledTask:
     """A scheduled task definition."""
+
     id: str
     name: str
     schedule_type: str  # "cron", "interval", "once"
@@ -89,7 +90,7 @@ class CronParser:
     def next_run(expression: str, after: datetime | None = None) -> datetime | None:
         """Calculate the next run time for a cron expression."""
         if after is None:
-            after = datetime.now(timezone.utc)
+            after = datetime.now(UTC)
 
         # Check every minute for the next 48 hours
         check_time = after.replace(second=0, microsecond=0) + timedelta(minutes=1)
@@ -121,9 +122,7 @@ class TaskScheduler:
         self._running = False
         self._task: asyncio.Task | None = None
 
-    def register_handler(
-        self, action_type: str, handler: Callable[..., Coroutine]
-    ) -> None:
+    def register_handler(self, action_type: str, handler: Callable[..., Coroutine]) -> None:
         """Register a handler for a task action type."""
         self._handlers[action_type] = handler
         logger.debug("handler_registered", action_type=action_type)
@@ -223,7 +222,7 @@ class TaskScheduler:
     async def _run_loop(self) -> None:
         """Main scheduler loop — checks every 30 seconds."""
         while self._running:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             for task in list(self._tasks.values()):
                 if not task.enabled or not task.next_run:
@@ -260,7 +259,7 @@ class TaskScheduler:
     @staticmethod
     def _calculate_next_run(task: ScheduledTask) -> datetime | None:
         """Calculate the next run time for a task."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if task.schedule_type == "cron":
             return CronParser.next_run(task.schedule_value, now)
@@ -275,7 +274,7 @@ class TaskScheduler:
             try:
                 run_at = datetime.fromisoformat(task.schedule_value)
                 if run_at.tzinfo is None:
-                    run_at = run_at.replace(tzinfo=timezone.utc)
+                    run_at = run_at.replace(tzinfo=UTC)
                 if run_at > now:
                     return run_at
             except ValueError:

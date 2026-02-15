@@ -59,8 +59,14 @@ def cli() -> None:
     help="Required for dangerous operations",
 )
 @click.option("--no-browser", is_flag=True, default=False, help="Don't open browser on start")
-@click.option("--channel", type=click.Choice(["gateway", "telegram", "discord", "slack", "matrix", "cli"]), default="gateway")
-@click.option("--voice-wake", is_flag=True, default=False, help="Enable always-on voice wake word detection")
+@click.option(
+    "--channel",
+    type=click.Choice(["gateway", "telegram", "discord", "slack", "matrix", "cli"]),
+    default="gateway",
+)
+@click.option(
+    "--voice-wake", is_flag=True, default=False, help="Enable always-on voice wake word detection"
+)
 def start(
     host: str,
     port: int,
@@ -94,9 +100,7 @@ def start(
     from src.constants import VAULT_FILE
 
     if not VAULT_FILE.exists():
-        console.print(
-            "[yellow]First run detected. Running setup wizard...[/]\n"
-        )
+        console.print("[yellow]First run detected. Running setup wizard...[/]\n")
         _run_setup()
         return
 
@@ -139,6 +143,7 @@ def _start_gateway(host: str, port: int, no_browser: bool) -> None:
 
     if not no_browser:
         import webbrowser
+
         webbrowser.open(f"http://{host}:{port}")
 
     uvicorn.run(app, host=host, port=port, log_level="info")
@@ -163,8 +168,10 @@ def _start_telegram() -> None:
 def _start_discord() -> None:
     """Start the Discord bot channel."""
     import os
+
     try:
         from dotenv import load_dotenv
+
         load_dotenv()
     except ImportError:
         pass
@@ -178,10 +185,12 @@ def _start_discord() -> None:
         return
 
     allowed_users = os.getenv("DISCORD_ALLOWED_USERS", "")
-    allowed_list = [u.strip() for u in allowed_users.split(",") if u.strip()] if allowed_users else None
+    allowed_list = (
+        [u.strip() for u in allowed_users.split(",") if u.strip()] if allowed_users else None
+    )
 
-    from src.channels.discord_adapter import DiscordChannel
     from src.agent.brain import AgentBrain
+    from src.channels.discord_adapter import DiscordChannel
     from src.gateway.config import load_config
 
     config = load_config()
@@ -208,8 +217,10 @@ def _start_slack() -> None:
 def _start_matrix() -> None:
     """Start the Matrix bot channel."""
     import os
+
     try:
         from dotenv import load_dotenv
+
         load_dotenv()
     except ImportError:
         pass
@@ -269,6 +280,7 @@ def stop() -> None:
     try:
         pid = int(pid_file.read_text().strip())
         import os
+
         os.kill(pid, signal.SIGTERM)
         pid_file.unlink(missing_ok=True)
         console.print(f"[green]Gulama (PID {pid}) stopped.[/]")
@@ -360,6 +372,7 @@ def doctor(json_output: bool) -> None:
     config: dict = {}
     try:
         from src.gateway.config import load_config
+
         cfg = load_config()
         config = cfg.model_dump()
     except Exception:
@@ -370,6 +383,7 @@ def doctor(json_output: bool) -> None:
 
     if json_output:
         import json as json_mod
+
         output = {
             "summary": doc.get_summary(),
             "results": [

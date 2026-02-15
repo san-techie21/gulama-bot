@@ -16,7 +16,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -36,6 +36,7 @@ class SubAgentStatus(str, Enum):
 @dataclass
 class SubAgentResult:
     """Result from a sub-agent execution."""
+
     agent_id: str
     status: SubAgentStatus
     output: str = ""
@@ -63,10 +64,7 @@ class SubAgentManager:
     @property
     def active_count(self) -> int:
         """Number of currently running sub-agents."""
-        return sum(
-            1 for r in self._agents.values()
-            if r.status == SubAgentStatus.RUNNING
-        )
+        return sum(1 for r in self._agents.values() if r.status == SubAgentStatus.RUNNING)
 
     def list_agents(self) -> list[dict[str, Any]]:
         """List all sub-agents and their status."""
@@ -113,9 +111,7 @@ class SubAgentManager:
         )
         self._agents[agent_id] = result
 
-        task = asyncio.create_task(
-            self._run_agent(agent_id, message, channel, user_id)
-        )
+        task = asyncio.create_task(self._run_agent(agent_id, message, channel, user_id))
         self._tasks[agent_id] = task
 
         logger.info("sub_agent_spawned", agent_id=agent_id, message=message[:80])
@@ -131,7 +127,7 @@ class SubAgentManager:
         """Run a sub-agent in the background."""
         result = self._agents[agent_id]
         result.status = SubAgentStatus.RUNNING
-        result.started_at = datetime.now(timezone.utc)
+        result.started_at = datetime.now(UTC)
 
         try:
             # Lazy import to avoid circular deps
@@ -170,7 +166,7 @@ class SubAgentManager:
             logger.error("sub_agent_failed", agent_id=agent_id, error=str(e))
 
         finally:
-            result.completed_at = datetime.now(timezone.utc)
+            result.completed_at = datetime.now(UTC)
             self._tasks.pop(agent_id, None)
 
     async def cancel(self, agent_id: str) -> bool:
@@ -185,7 +181,7 @@ class SubAgentManager:
     async def cancel_all(self) -> int:
         """Cancel all running sub-agents."""
         cancelled = 0
-        for agent_id, task in list(self._tasks.items()):
+        for _agent_id, task in list(self._tasks.items()):
             if not task.done():
                 task.cancel()
                 cancelled += 1
@@ -196,11 +192,13 @@ class SubAgentManager:
     def cleanup_completed(self, keep_last: int = 20) -> int:
         """Remove old completed/failed results, keeping the last N."""
         completed = [
-            (aid, r) for aid, r in self._agents.items()
-            if r.status in (SubAgentStatus.COMPLETED, SubAgentStatus.FAILED, SubAgentStatus.CANCELLED)
+            (aid, r)
+            for aid, r in self._agents.items()
+            if r.status
+            in (SubAgentStatus.COMPLETED, SubAgentStatus.FAILED, SubAgentStatus.CANCELLED)
         ]
         # Sort by completion time
-        completed.sort(key=lambda x: x[1].completed_at or datetime.min.replace(tzinfo=timezone.utc))
+        completed.sort(key=lambda x: x[1].completed_at or datetime.min.replace(tzinfo=UTC))
 
         removed = 0
         while len(completed) > keep_last:

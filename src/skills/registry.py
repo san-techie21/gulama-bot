@@ -93,6 +93,7 @@ class SkillRegistry:
         for skill_name, module_path, class_name in optional_skills:
             try:
                 import importlib
+
                 module = importlib.import_module(module_path)
                 skill_class = getattr(module, class_name)
                 builtins.append(skill_class())

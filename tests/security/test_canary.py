@@ -1,7 +1,5 @@
 """Tests for the canary token system."""
 
-import pytest
-
 from src.security.canary import CanarySystem
 
 

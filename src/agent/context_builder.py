@@ -22,8 +22,6 @@ Context budget allocation:
 
 from __future__ import annotations
 
-from typing import Any
-
 from src.agent.persona import PersonaManager
 from src.gateway.config import GulamaConfig
 from src.memory.store import MemoryStore
@@ -110,18 +108,22 @@ class ContextBuilder:
         # 2. RAG: Relevant facts via vector similarity
         rag_context = self._get_rag_context(user_message)
         if rag_context:
-            messages.append({
-                "role": "system",
-                "content": f"Relevant context from memory:\n{rag_context}",
-            })
+            messages.append(
+                {
+                    "role": "system",
+                    "content": f"Relevant context from memory:\n{rag_context}",
+                }
+            )
 
         # 3. Related past conversations (via vector similarity)
         related_convos = self._get_related_conversations(user_message)
         if related_convos:
-            messages.append({
-                "role": "system",
-                "content": f"Related past conversations:\n{related_convos}",
-            })
+            messages.append(
+                {
+                    "role": "system",
+                    "content": f"Related past conversations:\n{related_convos}",
+                }
+            )
 
         # 4. Recent conversation messages (sliding window for continuity)
         if conversation_id:

@@ -8,7 +8,7 @@ and alerts when spending approaches limits.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from src.memory.store import MemoryStore
@@ -35,6 +35,7 @@ TOKEN_PRICING: dict[str, dict[str, float]] = {
 @dataclass
 class CostEntry:
     """A single cost tracking entry."""
+
     provider: str
     model: str
     input_tokens: int
@@ -92,7 +93,7 @@ class CostTracker:
             channel=channel,
             skill=skill,
             conversation_id=conversation_id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
         # Update session totals
@@ -169,14 +170,20 @@ class CostTracker:
     def get_today_stats(self) -> dict[str, Any]:
         """Get today's cost summary."""
         if not self.memory_store:
-            return {"today_cost_usd": 0.0, "budget_usd": self.daily_budget_usd, "remaining_usd": self.daily_budget_usd}
+            return {
+                "today_cost_usd": 0.0,
+                "budget_usd": self.daily_budget_usd,
+                "remaining_usd": self.daily_budget_usd,
+            }
 
         today_cost = self.memory_store.get_today_cost()
         return {
             "today_cost_usd": round(today_cost, 6),
             "budget_usd": self.daily_budget_usd,
             "remaining_usd": round(max(0, self.daily_budget_usd - today_cost), 6),
-            "budget_used_pct": round((today_cost / self.daily_budget_usd) * 100, 1) if self.daily_budget_usd > 0 else 0,
+            "budget_used_pct": round((today_cost / self.daily_budget_usd) * 100, 1)
+            if self.daily_budget_usd > 0
+            else 0,
         }
 
     def get_history(self, days: int = 7) -> list[dict[str, Any]]:
@@ -198,12 +205,8 @@ class CostTracker:
         history = self.get_history(days=30)
 
         # Calculate weekly and monthly totals
-        weekly_cost = sum(
-            day.get("total_cost", 0) for day in self.get_history(days=7)
-        )
-        monthly_cost = sum(
-            day.get("total_cost", 0) for day in history
-        )
+        weekly_cost = sum(day.get("total_cost", 0) for day in self.get_history(days=7))
+        monthly_cost = sum(day.get("total_cost", 0) for day in history)
 
         return {
             "today": today,

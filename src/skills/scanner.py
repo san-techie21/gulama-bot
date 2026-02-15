@@ -26,6 +26,7 @@ logger = get_logger("scanner")
 @dataclass
 class Vulnerability:
     """A detected vulnerability."""
+
     id: str
     severity: str  # critical, high, medium, low, negligible
     package: str
@@ -37,6 +38,7 @@ class Vulnerability:
 @dataclass
 class ScanResult:
     """Result of a security scan."""
+
     skill_name: str
     scan_type: str  # "sbom", "grype", "static", "full"
     passed: bool
@@ -138,6 +140,7 @@ class SkillScanner:
 
         try:
             import tomli
+
             with open(manifest_path, "rb") as f:
                 data = tomli.load(f)
 
@@ -195,13 +198,15 @@ class SkillScanner:
         for dep in deps:
             for pattern, vuln_info in known_vulns.items():
                 if dep.lower().startswith(pattern.split("<")[0]):
-                    vulnerabilities.append(Vulnerability(
-                        id=vuln_info["id"],
-                        severity=vuln_info["severity"],
-                        package=dep,
-                        version="",
-                        description=vuln_info["description"],
-                    ))
+                    vulnerabilities.append(
+                        Vulnerability(
+                            id=vuln_info["id"],
+                            severity=vuln_info["severity"],
+                            package=dep,
+                            version="",
+                            description=vuln_info["description"],
+                        )
+                    )
 
         return vulnerabilities
 
@@ -240,14 +245,18 @@ class SkillScanner:
             for match in data.get("matches", []):
                 vuln = match.get("vulnerability", {})
                 artifact = match.get("artifact", {})
-                vulnerabilities.append(Vulnerability(
-                    id=vuln.get("id", "unknown"),
-                    severity=vuln.get("severity", "unknown").lower(),
-                    package=artifact.get("name", "unknown"),
-                    version=artifact.get("version", ""),
-                    fixed_in=vuln.get("fix", {}).get("versions", [""])[0] if vuln.get("fix") else "",
-                    description=vuln.get("description", "")[:200],
-                ))
+                vulnerabilities.append(
+                    Vulnerability(
+                        id=vuln.get("id", "unknown"),
+                        severity=vuln.get("severity", "unknown").lower(),
+                        package=artifact.get("name", "unknown"),
+                        version=artifact.get("version", ""),
+                        fixed_in=vuln.get("fix", {}).get("versions", [""])[0]
+                        if vuln.get("fix")
+                        else "",
+                        description=vuln.get("description", "")[:200],
+                    )
+                )
 
         except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError) as e:
             logger.warning("grype_scan_error", error=str(e))
@@ -302,6 +311,7 @@ class SkillScanner:
         if manifest.exists():
             try:
                 import tomli
+
                 with open(manifest, "rb") as f:
                     data = tomli.load(f)
                 python_deps = data.get("dependencies", {}).get("python", [])

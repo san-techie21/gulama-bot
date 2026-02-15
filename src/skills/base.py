@@ -24,6 +24,7 @@ from src.security.policy_engine import ActionType
 @dataclass
 class SkillMetadata:
     """Metadata about a skill."""
+
     name: str
     description: str
     version: str = "0.1.0"
@@ -36,6 +37,7 @@ class SkillMetadata:
 @dataclass
 class SkillResult:
     """Result of a skill execution."""
+
     success: bool
     output: str
     error: str = ""

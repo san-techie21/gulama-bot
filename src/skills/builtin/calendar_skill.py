@@ -11,7 +11,7 @@ Config loaded from env vars:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from src.security.policy_engine import ActionType
@@ -44,8 +44,10 @@ class CalendarSkill(BaseSkill):
         if self._configured:
             return
         import os
+
         try:
             from dotenv import load_dotenv
+
             load_dotenv()
         except ImportError:
             pass
@@ -140,7 +142,8 @@ class CalendarSkill(BaseSkill):
         handler = dispatch.get(action)
         if not handler:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unknown calendar action: {action}. Use: list, create, delete, search",
             )
 
@@ -150,7 +153,8 @@ class CalendarSkill(BaseSkill):
             return await handler(**{k: v for k, v in kwargs.items() if k != "action"})
         except ImportError:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="httpx is required for Google Calendar. Install: pip install httpx",
             )
         except Exception as e:
@@ -158,13 +162,17 @@ class CalendarSkill(BaseSkill):
             return SkillResult(success=False, output="", error=f"Calendar error: {str(e)[:300]}")
 
     async def _list_events(
-        self, days: int = 7, calendar_id: str = "primary", **_: Any,
+        self,
+        days: int = 7,
+        calendar_id: str = "primary",
+        **_: Any,
     ) -> SkillResult:
         """List upcoming events."""
         if self._backend == "google":
             return await self._google_list_events(days, calendar_id)
         return SkillResult(
-            success=False, output="",
+            success=False,
+            output="",
             error="CalDAV integration coming soon. Use Google Calendar backend for now.",
         )
 
@@ -179,9 +187,13 @@ class CalendarSkill(BaseSkill):
     ) -> SkillResult:
         """Create a new event."""
         if not title:
-            return SkillResult(success=False, output="", error="'title' is required for create action")
+            return SkillResult(
+                success=False, output="", error="'title' is required for create action"
+            )
         if not start:
-            return SkillResult(success=False, output="", error="'start' is required for create action")
+            return SkillResult(
+                success=False, output="", error="'start' is required for create action"
+            )
 
         if not end:
             try:
@@ -198,7 +210,9 @@ class CalendarSkill(BaseSkill):
     async def _delete_event(self, event_id: str = "", **_: Any) -> SkillResult:
         """Delete an event."""
         if not event_id:
-            return SkillResult(success=False, output="", error="'event_id' is required for delete action")
+            return SkillResult(
+                success=False, output="", error="'event_id' is required for delete action"
+            )
 
         if self._backend == "google":
             return await self._google_delete_event(event_id)
@@ -207,12 +221,15 @@ class CalendarSkill(BaseSkill):
     async def _search_events(self, query: str = "", days: int = 30, **_: Any) -> SkillResult:
         """Search for events."""
         if not query:
-            return SkillResult(success=False, output="", error="'query' is required for search action")
+            return SkillResult(
+                success=False, output="", error="'query' is required for search action"
+            )
 
         if self._backend == "google":
             return await self._google_search_events(query, days)
         return SkillResult(
-            success=False, output="",
+            success=False,
+            output="",
             error=f"Search for '{query}' — CalDAV search not yet implemented.",
         )
 
@@ -222,13 +239,14 @@ class CalendarSkill(BaseSkill):
         """List events via Google Calendar API."""
         if not self._access_token:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="Google Calendar not configured. Set GOOGLE_CALENDAR_ACCESS_TOKEN env var.",
             )
 
         import httpx
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         time_max = now + timedelta(days=days)
 
         async with httpx.AsyncClient() as client:
@@ -246,7 +264,8 @@ class CalendarSkill(BaseSkill):
 
             if response.status_code != 200:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"Google Calendar API error: {response.status_code}",
                 )
 
@@ -259,7 +278,8 @@ class CalendarSkill(BaseSkill):
             lines = []
             for event in events:
                 start = event.get("start", {}).get(
-                    "dateTime", event.get("start", {}).get("date", ""),
+                    "dateTime",
+                    event.get("start", {}).get("date", ""),
                 )
                 title = event.get("summary", "(No title)")
                 event_id = event.get("id", "")
@@ -272,7 +292,12 @@ class CalendarSkill(BaseSkill):
             )
 
     async def _google_create_event(
-        self, title: str, start: str, end: str, description: str, location: str,
+        self,
+        title: str,
+        start: str,
+        end: str,
+        description: str,
+        location: str,
     ) -> SkillResult:
         """Create event via Google Calendar API."""
         if not self._access_token:
@@ -305,7 +330,8 @@ class CalendarSkill(BaseSkill):
                     metadata={"event_id": data.get("id", "")},
                 )
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Failed to create event: {response.status_code}",
             )
 
@@ -324,7 +350,8 @@ class CalendarSkill(BaseSkill):
             if response.status_code == 204:
                 return SkillResult(success=True, output=f"Event {event_id[:8]} deleted")
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Failed to delete event: {response.status_code}",
             )
 
@@ -335,7 +362,7 @@ class CalendarSkill(BaseSkill):
 
         import httpx
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -351,7 +378,8 @@ class CalendarSkill(BaseSkill):
             )
             if response.status_code != 200:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"Search failed: {response.status_code}",
                 )
 
@@ -362,7 +390,8 @@ class CalendarSkill(BaseSkill):
             lines = []
             for event in events:
                 start = event.get("start", {}).get(
-                    "dateTime", event.get("start", {}).get("date", ""),
+                    "dateTime",
+                    event.get("start", {}).get("date", ""),
                 )
                 lines.append(f"{start[:16]} — {event.get('summary', '(No title)')}")
             return SkillResult(

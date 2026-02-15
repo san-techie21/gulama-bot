@@ -18,7 +18,6 @@ import importlib
 import os
 import platform
 import shutil
-import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,6 +31,7 @@ logger = get_logger("doctor")
 @dataclass
 class CheckResult:
     """Result of a single health check."""
+
     name: str
     status: str  # "pass", "warn", "fail", "skip"
     message: str
@@ -132,14 +132,16 @@ class SecurityDoctor:
             lines.append("")
 
         summary = self.get_summary()
-        lines.extend([
-            "-" * 60,
-            f"  Grade: {summary['grade']}",
-            f"  Score: {summary['score']} checks passed",
-            f"  Passed: {summary['passed']} | Warnings: {summary['warned']} | "
-            f"Failed: {summary['failed']} | Skipped: {summary['skipped']}",
-            "=" * 60,
-        ])
+        lines.extend(
+            [
+                "-" * 60,
+                f"  Grade: {summary['grade']}",
+                f"  Score: {summary['score']} checks passed",
+                f"  Passed: {summary['passed']} | Warnings: {summary['warned']} | "
+                f"Failed: {summary['failed']} | Skipped: {summary['skipped']}",
+                "=" * 60,
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -150,7 +152,9 @@ class SecurityDoctor:
         if ver >= (3, 12):
             self._add("Python version", "pass", f"Python {ver.major}.{ver.minor}.{ver.micro}")
         elif ver >= (3, 11):
-            self._add("Python version", "warn", f"Python {ver.major}.{ver.minor} (3.12+ recommended)")
+            self._add(
+                "Python version", "warn", f"Python {ver.major}.{ver.minor} (3.12+ recommended)"
+            )
         else:
             self._add("Python version", "fail", f"Python {ver.major}.{ver.minor} (3.12+ required)")
 
@@ -161,8 +165,15 @@ class SecurityDoctor:
 
     def _check_core_dependencies(self) -> None:
         core_deps = [
-            "fastapi", "uvicorn", "httpx", "litellm", "cryptography",
-            "click", "rich", "structlog", "pydantic",
+            "fastapi",
+            "uvicorn",
+            "httpx",
+            "litellm",
+            "cryptography",
+            "click",
+            "rich",
+            "structlog",
+            "pydantic",
         ]
         missing = []
         for dep in core_deps:
@@ -175,7 +186,8 @@ class SecurityDoctor:
             self._add("Core dependencies", "pass", "All core dependencies installed")
         else:
             self._add(
-                "Core dependencies", "fail",
+                "Core dependencies",
+                "fail",
                 f"Missing: {', '.join(missing)}",
                 details="Run: pip install gulama",
             )
@@ -199,7 +211,8 @@ class SecurityDoctor:
 
         if unavailable:
             self._add(
-                "Optional dependencies", "warn",
+                "Optional dependencies",
+                "warn",
                 f"{len(available)}/{len(optional)} optional features available",
                 details=f"Unavailable: {', '.join(unavailable)}",
             )
@@ -225,7 +238,8 @@ class SecurityDoctor:
             self._add("Sandbox availability", "pass", f"Available: {', '.join(available)}")
         else:
             self._add(
-                "Sandbox availability", "warn",
+                "Sandbox availability",
+                "warn",
                 "No sandbox runtime detected",
                 details="Install bubblewrap (Linux), Docker, or enable Windows Sandbox",
             )
@@ -233,6 +247,7 @@ class SecurityDoctor:
     def _check_encryption_available(self) -> None:
         try:
             from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
             AESGCM.generate_key(bit_length=256)
             self._add("Encryption (AES-256-GCM)", "pass", "Cryptography library working")
         except Exception as e:
@@ -244,7 +259,8 @@ class SecurityDoctor:
             self._add("Gateway binding", "pass", f"Loopback only ({host})")
         else:
             self._add(
-                "Gateway binding", "fail",
+                "Gateway binding",
+                "fail",
                 f"Binding to {host} — exposed to network!",
                 details="Set gateway_host = '127.0.0.1' in config.toml",
             )
@@ -252,11 +268,13 @@ class SecurityDoctor:
     def _check_credential_storage(self) -> None:
         try:
             import keyring
+
             backend = type(keyring.get_keyring()).__name__
             self._add("Credential storage", "pass", f"OS keyring: {backend}")
         except Exception:
             self._add(
-                "Credential storage", "warn",
+                "Credential storage",
+                "warn",
                 "OS keyring unavailable — falling back to encrypted file",
             )
 
@@ -272,13 +290,15 @@ class SecurityDoctor:
             self._add("Signing & scanning tools", "pass", "cosign + syft + grype installed")
         elif "cosign" in available:
             self._add(
-                "Signing & scanning tools", "warn",
+                "Signing & scanning tools",
+                "warn",
                 f"Missing: {', '.join(missing)}",
                 details="Install Sigstore tools for full supply chain security",
             )
         else:
             self._add(
-                "Signing & scanning tools", "warn",
+                "Signing & scanning tools",
+                "warn",
                 "No signing tools found — using SHA-256 fallback",
                 details="Install cosign, syft, grype for full supply chain security",
             )
@@ -302,7 +322,8 @@ class SecurityDoctor:
             self._add("Secure defaults", "pass", "All security features enabled")
         else:
             self._add(
-                "Secure defaults", "fail",
+                "Secure defaults",
+                "fail",
                 f"Security features disabled: {', '.join(issues)}",
             )
 
@@ -310,7 +331,8 @@ class SecurityDoctor:
         env_path = Path(".env")
         if env_path.exists():
             self._add(
-                ".env file", "warn",
+                ".env file",
+                "warn",
                 ".env file found — ensure it's in .gitignore",
                 details="Secrets should be in the encrypted vault, not .env",
             )
@@ -321,7 +343,8 @@ class SecurityDoctor:
         debug = self.config.get("debug", False) or os.environ.get("GULAMA_DEBUG", "")
         if debug:
             self._add(
-                "Debug mode", "warn",
+                "Debug mode",
+                "warn",
                 "Debug mode is ON — disable for production",
             )
         else:
@@ -340,12 +363,18 @@ class SecurityDoctor:
             self._add("Data directory", "pass", f"Found: {data_dir}")
         else:
             self._add(
-                "Data directory", "skip",
+                "Data directory",
+                "skip",
                 f"Not initialized: {data_dir}",
                 details="Run 'gulama setup' to initialize",
             )
 
     def _add(self, name: str, status: str, message: str, details: str = "") -> None:
-        self.results.append(CheckResult(
-            name=name, status=status, message=message, details=details,
-        ))
+        self.results.append(
+            CheckResult(
+                name=name,
+                status=status,
+                message=message,
+                details=details,
+            )
+        )

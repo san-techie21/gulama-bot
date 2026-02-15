@@ -77,8 +77,13 @@ class BrowserSkill(BaseSkill):
                         "action": {
                             "type": "string",
                             "enum": [
-                                "navigate", "screenshot", "click", "fill", "extract",
-                                "browse", "research",
+                                "navigate",
+                                "screenshot",
+                                "click",
+                                "fill",
+                                "extract",
+                                "browse",
+                                "research",
                             ],
                             "description": "The browser action to perform",
                         },
@@ -137,7 +142,8 @@ class BrowserSkill(BaseSkill):
         handler = dispatch.get(action)
         if not handler:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unknown browser action: {action}. Use: navigate, screenshot, click, fill, extract, browse, research",
             )
 
@@ -147,11 +153,13 @@ class BrowserSkill(BaseSkill):
             missing = str(e)
             if "browser_use" in missing or "browser-use" in missing:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error="browser-use is required for AI browsing. Install: pip install browser-use",
                 )
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="Playwright is required for browser skill. Install: pip install playwright && playwright install chromium",
             )
         except Exception as e:
@@ -186,7 +194,9 @@ class BrowserSkill(BaseSkill):
     async def _navigate(self, url: str = "", wait_for: str = "load", **_: Any) -> SkillResult:
         """Navigate to a URL and return page content."""
         if not url:
-            return SkillResult(success=False, output="", error="URL is required for navigate action")
+            return SkillResult(
+                success=False, output="", error="URL is required for navigate action"
+            )
 
         await self._ensure_browser()
 
@@ -210,7 +220,9 @@ class BrowserSkill(BaseSkill):
     async def _screenshot(self, path: str = "", full_page: bool = False, **_: Any) -> SkillResult:
         """Take a screenshot."""
         if not path:
-            return SkillResult(success=False, output="", error="Path is required for screenshot action")
+            return SkillResult(
+                success=False, output="", error="Path is required for screenshot action"
+            )
 
         await self._ensure_browser()
         await self._page.screenshot(path=path, full_page=full_page)
@@ -219,7 +231,9 @@ class BrowserSkill(BaseSkill):
     async def _click(self, selector: str = "", **_: Any) -> SkillResult:
         """Click an element."""
         if not selector:
-            return SkillResult(success=False, output="", error="Selector is required for click action")
+            return SkillResult(
+                success=False, output="", error="Selector is required for click action"
+            )
 
         await self._ensure_browser()
         await self._page.click(selector, timeout=10000)
@@ -228,7 +242,9 @@ class BrowserSkill(BaseSkill):
     async def _fill(self, selector: str = "", value: str = "", **_: Any) -> SkillResult:
         """Fill a form field."""
         if not selector:
-            return SkillResult(success=False, output="", error="Selector is required for fill action")
+            return SkillResult(
+                success=False, output="", error="Selector is required for fill action"
+            )
         if not value:
             return SkillResult(success=False, output="", error="Value is required for fill action")
 
@@ -257,12 +273,15 @@ class BrowserSkill(BaseSkill):
         if self._browser_use_available is None:
             try:
                 import browser_use  # noqa: F401
+
                 self._browser_use_available = True
             except ImportError:
                 self._browser_use_available = False
         return self._browser_use_available
 
-    async def _browse(self, task: str = "", url: str = "", max_steps: int = 10, **_: Any) -> SkillResult:
+    async def _browse(
+        self, task: str = "", url: str = "", max_steps: int = 10, **_: Any
+    ) -> SkillResult:
         """
         AI-powered natural language web browsing.
 
@@ -272,7 +291,8 @@ class BrowserSkill(BaseSkill):
         """
         if not task and not url:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="Either 'task' (natural language instruction) or 'url' is required for browse",
             )
 
@@ -281,7 +301,8 @@ class BrowserSkill(BaseSkill):
             if url:
                 return await self._navigate(url=url)
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=(
                     "browser-use library is not installed. "
                     "Install: pip install browser-use\n"
@@ -291,6 +312,7 @@ class BrowserSkill(BaseSkill):
 
         try:
             import os
+
             from browser_use import Agent as BrowserAgent
             from langchain_openai import ChatOpenAI
 
@@ -317,7 +339,11 @@ class BrowserSkill(BaseSkill):
             # Build the task
             full_task = task
             if url:
-                full_task = f"Go to {url}. Then: {task}" if task else f"Go to {url} and extract the main content."
+                full_task = (
+                    f"Go to {url}. Then: {task}"
+                    if task
+                    else f"Go to {url} and extract the main content."
+                )
 
             # Create and run the browser-use agent
             agent = BrowserAgent(
@@ -357,7 +383,8 @@ class BrowserSkill(BaseSkill):
 
         except ImportError:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="browser-use dependencies missing. Install: pip install browser-use langchain-openai",
             )
         except Exception as e:
@@ -374,7 +401,8 @@ class BrowserSkill(BaseSkill):
         """
         if not task:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="'task' is required for research action (e.g., 'Research the top 3 Python web frameworks and compare them')",
             )
 

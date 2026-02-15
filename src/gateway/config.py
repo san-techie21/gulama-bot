@@ -10,7 +10,6 @@ from pydantic_settings import BaseSettings
 
 from src.constants import (
     CONFIG_FILE,
-    DATA_DIR,
     DEFAULT_AUTONOMY_LEVEL,
     DEFAULT_DAILY_TOKEN_BUDGET,
     DEFAULT_HOST,

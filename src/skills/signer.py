@@ -11,13 +11,11 @@ Usage:
 from __future__ import annotations
 
 import hashlib
-import json
 import subprocess
 import tarfile
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from src.utils.logging import get_logger
 
@@ -27,6 +25,7 @@ logger = get_logger("skill_signer")
 @dataclass
 class SigningResult:
     """Result of a skill signing operation."""
+
     skill_name: str
     version: str
     sha256: str
@@ -92,6 +91,7 @@ class SkillSigner:
         if manifest_path.exists():
             try:
                 import tomli
+
                 with open(manifest_path, "rb") as f:
                     data = tomli.load(f)
                 skill = data.get("skill", {})

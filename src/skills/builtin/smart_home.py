@@ -49,6 +49,7 @@ class SmartHomeSkill(BaseSkill):
             return
         try:
             from dotenv import load_dotenv
+
             load_dotenv()
         except ImportError:
             pass
@@ -82,8 +83,13 @@ class SmartHomeSkill(BaseSkill):
                         "action": {
                             "type": "string",
                             "enum": [
-                                "list_devices", "get_state", "turn_on", "turn_off",
-                                "set_state", "call_service", "list_automations",
+                                "list_devices",
+                                "get_state",
+                                "turn_on",
+                                "turn_off",
+                                "set_state",
+                                "call_service",
+                                "list_automations",
                             ],
                             "description": "Smart home action to perform",
                         },
@@ -126,7 +132,8 @@ class SmartHomeSkill(BaseSkill):
         handler = dispatch.get(action)
         if not handler:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unknown smart home action: {action}",
             )
 
@@ -134,7 +141,8 @@ class SmartHomeSkill(BaseSkill):
 
         if not self._ha_token:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="Home Assistant not configured. Set HA_URL and HA_TOKEN env vars.",
             )
 
@@ -142,7 +150,8 @@ class SmartHomeSkill(BaseSkill):
             return await handler(**{k: v for k, v in kwargs.items() if k != "action"})
         except ImportError:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="httpx is required. Install: pip install httpx",
             )
         except Exception as e:
@@ -211,14 +220,23 @@ class SmartHomeSkill(BaseSkill):
         ]
 
         # Add relevant attributes
-        for key in ("brightness", "color_temp", "temperature", "humidity",
-                     "current_temperature", "fan_mode", "media_title"):
+        for key in (
+            "brightness",
+            "color_temp",
+            "temperature",
+            "humidity",
+            "current_temperature",
+            "fan_mode",
+            "media_title",
+        ):
             if key in attrs:
                 lines.append(f"{key}: {attrs[key]}")
 
         return SkillResult(success=True, output="\n".join(lines))
 
-    async def _turn_on(self, entity_id: str = "", service_data: dict | None = None, **_: Any) -> SkillResult:
+    async def _turn_on(
+        self, entity_id: str = "", service_data: dict | None = None, **_: Any
+    ) -> SkillResult:
         """Turn on an entity."""
         if not entity_id:
             return SkillResult(success=False, output="", error="entity_id is required")
@@ -241,7 +259,10 @@ class SmartHomeSkill(BaseSkill):
         return SkillResult(success=True, output=f"Turned off: {entity_id}")
 
     async def _set_state(
-        self, entity_id: str = "", service_data: dict | None = None, **_: Any,
+        self,
+        entity_id: str = "",
+        service_data: dict | None = None,
+        **_: Any,
     ) -> SkillResult:
         """Set state with specific attributes (brightness, temp, etc)."""
         if not entity_id:
@@ -268,12 +289,15 @@ class SmartHomeSkill(BaseSkill):
     ) -> SkillResult:
         """Call any Home Assistant service."""
         if not service:
-            return SkillResult(success=False, output="", error="service is required (e.g., 'light/toggle')")
+            return SkillResult(
+                success=False, output="", error="service is required (e.g., 'light/toggle')"
+            )
 
         parts = service.split("/")
         if len(parts) != 2:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="service format: 'domain/service' (e.g., 'light/toggle')",
             )
 

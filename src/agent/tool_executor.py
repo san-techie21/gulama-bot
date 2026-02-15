@@ -17,7 +17,6 @@ flow through here, no exceptions.
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from src.security.audit_logger import AuditLogger
@@ -100,7 +99,9 @@ class ToolExecutor:
 
         # Step 2: Determine required action type
         meta = skill.get_metadata()
-        action_type = meta.required_actions[0] if meta.required_actions else ActionType.SKILL_EXECUTE
+        action_type = (
+            meta.required_actions[0] if meta.required_actions else ActionType.SKILL_EXECUTE
+        )
 
         # Build resource string from arguments
         resource = self._build_resource_string(tool_name, arguments)

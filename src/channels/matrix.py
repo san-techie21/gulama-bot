@@ -90,6 +90,7 @@ class MatrixChannel(BaseChannel):
     def run(self) -> None:
         """Start the Matrix bot."""
         import os
+
         self.homeserver = self.homeserver or os.getenv("MATRIX_HOMESERVER", "https://matrix.org")
         self.user_id = self.user_id or os.getenv("MATRIX_USER_ID", "")
         self.access_token = self.access_token or os.getenv("MATRIX_ACCESS_TOKEN", "")

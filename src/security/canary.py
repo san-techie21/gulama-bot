@@ -17,9 +17,8 @@ from __future__ import annotations
 import hashlib
 import re
 import secrets
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from src.utils.logging import get_logger
 
@@ -33,6 +32,7 @@ CANARY_LENGTH = 16
 @dataclass
 class CanaryToken:
     """A canary token with metadata."""
+
     token: str
     purpose: str  # "prompt", "tool_output", "task_consistency"
     created_at: str = ""
@@ -40,12 +40,13 @@ class CanaryToken:
 
     def __post_init__(self):
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
 
 @dataclass
 class CanaryAlert:
     """Alert when a canary is triggered."""
+
     canary: CanaryToken
     found_in: str  # Where the canary was found
     context: str  # Surrounding text
@@ -54,7 +55,7 @@ class CanaryAlert:
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
 
 
 class CanarySystem:
@@ -122,9 +123,7 @@ class CanarySystem:
         assigned task (e.g., due to prompt injection causing task switching).
         """
         canary = self.generate_canary(purpose="task_consistency")
-        canary_hash = hashlib.sha256(
-            f"{canary.token}:{task_description}".encode()
-        ).hexdigest()[:16]
+        canary_hash = hashlib.sha256(f"{canary.token}:{task_description}".encode()).hexdigest()[:16]
 
         # Store the task hash for verification
         self._active_canaries[canary_hash] = canary
@@ -195,8 +194,14 @@ class CanarySystem:
         Returns a list of detected patterns with descriptions.
         """
         patterns = [
-            (r"ignore\s+(all\s+)?(previous|above)\s+(instructions?|prompts?|rules?)", "instruction_override"),
-            (r"ignore\s+(previous|above|all)\s+(instructions?|prompts?|rules?)", "instruction_override"),
+            (
+                r"ignore\s+(all\s+)?(previous|above)\s+(instructions?|prompts?|rules?)",
+                "instruction_override",
+            ),
+            (
+                r"ignore\s+(previous|above|all)\s+(instructions?|prompts?|rules?)",
+                "instruction_override",
+            ),
             (r"you\s+are\s+now\s+", "role_hijack"),
             (r"system\s*:\s*", "system_prompt_injection"),
             (r"</?(system|prompt|instructions?)>", "xml_tag_injection"),
@@ -215,10 +220,12 @@ class CanarySystem:
         detections = []
         for pattern, name in patterns:
             if re.search(pattern, text, re.IGNORECASE):
-                detections.append({
-                    "pattern": name,
-                    "description": f"Detected prompt injection pattern: {name}",
-                })
+                detections.append(
+                    {
+                        "pattern": name,
+                        "description": f"Detected prompt injection pattern: {name}",
+                    }
+                )
 
         if detections:
             logger.warning(

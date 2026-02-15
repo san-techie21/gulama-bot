@@ -19,7 +19,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
 from typing import Any
 
 from src.constants import SENSITIVE_PATHS
@@ -30,6 +29,7 @@ logger = get_logger("policy_engine")
 
 class Decision(str, Enum):
     """Policy decision outcomes."""
+
     ALLOW = "allow"
     DENY = "deny"
     ASK_USER = "ask_user"
@@ -37,6 +37,7 @@ class Decision(str, Enum):
 
 class ActionType(str, Enum):
     """Types of actions the agent can attempt."""
+
     FILE_READ = "file:read"
     FILE_WRITE = "file:write"
     FILE_DELETE = "file:delete"
@@ -56,8 +57,9 @@ class ActionType(str, Enum):
 @dataclass
 class PolicyContext:
     """Context for a policy evaluation request."""
+
     action: ActionType
-    resource: str = ""          # Path, URL, command, etc.
+    resource: str = ""  # Path, URL, command, etc.
     autonomy_level: int = 2
     channel: str = "cli"
     user_id: str | None = None
@@ -67,6 +69,7 @@ class PolicyContext:
 @dataclass
 class PolicyResult:
     """Result of a policy evaluation."""
+
     decision: Decision
     reason: str
     policy_name: str = ""
@@ -137,10 +140,8 @@ class PolicyEngine:
         self._policies = [
             # === HARD DENY — always block, regardless of autonomy ===
             HardDenyPolicy(),
-
             # === Autonomy-level policies ===
             AutonomyPolicy(),
-
             # === Resource-specific policies ===
             FileAccessPolicy(),
             NetworkPolicy(),
@@ -173,22 +174,22 @@ class HardDenyPolicy(Policy):
 
     # Patterns for commands that should NEVER be executed
     FORBIDDEN_COMMANDS = [
-        r"rm\s+-rf\s+/",                    # rm -rf /
-        r"rm\s+-rf\s+~",                    # rm -rf ~
-        r"mkfs\.",                            # Format filesystem
-        r"dd\s+if=.*of=/dev/",              # Direct disk write
-        r"chmod\s+-R\s+777\s+/",            # Recursive 777 on root
-        r":(){ :\|:& };:",                   # Fork bomb
-        r">\s*/dev/sd",                      # Overwrite disk
-        r"curl.*\|\s*(bash|sh|sudo)",        # Pipe to shell
-        r"wget.*\|\s*(bash|sh|sudo)",        # Pipe to shell
+        r"rm\s+-rf\s+/",  # rm -rf /
+        r"rm\s+-rf\s+~",  # rm -rf ~
+        r"mkfs\.",  # Format filesystem
+        r"dd\s+if=.*of=/dev/",  # Direct disk write
+        r"chmod\s+-R\s+777\s+/",  # Recursive 777 on root
+        r":(){ :\|:& };:",  # Fork bomb
+        r">\s*/dev/sd",  # Overwrite disk
+        r"curl.*\|\s*(bash|sh|sudo)",  # Pipe to shell
+        r"wget.*\|\s*(bash|sh|sudo)",  # Pipe to shell
     ]
 
     # SSRF targets — always blocked regardless of autonomy level
     BLOCKED_NETWORK_TARGETS = [
-        "169.254.169.254",        # AWS metadata
+        "169.254.169.254",  # AWS metadata
         "metadata.google.internal",  # GCP metadata
-        "100.100.100.200",        # Azure metadata
+        "100.100.100.200",  # Azure metadata
         "localhost",
         "127.0.0.1",
         "0.0.0.0",
@@ -304,8 +305,12 @@ class AutonomyPolicy(Policy):
                     reason="Autonomy level 2: safe action allowed.",
                     policy_name=self.name,
                 )
-            if ctx.action in (ActionType.SHELL_EXEC, ActionType.NETWORK_REQUEST,
-                              ActionType.NETWORK_DOWNLOAD, ActionType.EMAIL_SEND):
+            if ctx.action in (
+                ActionType.SHELL_EXEC,
+                ActionType.NETWORK_REQUEST,
+                ActionType.NETWORK_DOWNLOAD,
+                ActionType.EMAIL_SEND,
+            ):
                 return PolicyResult(
                     decision=Decision.ASK_USER,
                     reason="Autonomy level 2: shell/network actions require approval.",

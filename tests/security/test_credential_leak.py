@@ -7,8 +7,6 @@ detect and block credential exfiltration attempts.
 
 from __future__ import annotations
 
-import pytest
-
 from src.security.egress_filter import EgressFilter
 
 
@@ -53,9 +51,7 @@ class TestCredentialLeakPrevention:
 
     def test_safe_text_passes(self):
         """Normal text without credentials should pass."""
-        result = self.filter.check_data(
-            "The weather today is sunny with a high of 75F"
-        )
+        result = self.filter.check_data("The weather today is sunny with a high of 75F")
         assert result.allowed
 
     def test_ssh_private_key_blocked(self):

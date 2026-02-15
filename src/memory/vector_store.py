@@ -10,7 +10,6 @@ Gulama retrieves only semantically relevant memories.
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 from src.constants import CHROMA_DIR
@@ -75,7 +74,7 @@ class VectorStore:
             logger.warning(
                 "chromadb_not_available",
                 msg="ChromaDB not installed. Vector search disabled. "
-                    "Install with: pip install chromadb sentence-transformers",
+                "Install with: pip install chromadb sentence-transformers",
             )
         except Exception as e:
             logger.error("vector_store_open_failed", error=str(e))
@@ -111,11 +110,13 @@ class VectorStore:
         self._messages_col.upsert(
             ids=[message_id],
             documents=[content],
-            metadatas=[{
-                "conversation_id": conversation_id,
-                "role": role,
-                "timestamp": timestamp,
-            }],
+            metadatas=[
+                {
+                    "conversation_id": conversation_id,
+                    "role": role,
+                    "timestamp": timestamp,
+                }
+            ],
         )
 
     def search_messages(
@@ -159,10 +160,12 @@ class VectorStore:
         self._facts_col.upsert(
             ids=[fact_id],
             documents=[content],
-            metadatas=[{
-                "category": category,
-                "confidence": confidence,
-            }],
+            metadatas=[
+                {
+                    "category": category,
+                    "confidence": confidence,
+                }
+            ],
         )
 
     def search_facts(
@@ -206,10 +209,12 @@ class VectorStore:
         self._conversations_col.upsert(
             ids=[conversation_id],
             documents=[summary],
-            metadatas=[{
-                "channel": channel,
-                "started_at": started_at,
-            }],
+            metadatas=[
+                {
+                    "channel": channel,
+                    "started_at": started_at,
+                }
+            ],
         )
 
     def search_conversations(
@@ -295,4 +300,5 @@ class VectorStore:
 
 class VectorStoreError(Exception):
     """Raised for vector store errors."""
+
     pass

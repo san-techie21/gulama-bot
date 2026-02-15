@@ -19,9 +19,8 @@ from __future__ import annotations
 import os
 import signal
 import sys
-from pathlib import Path
 
-from src.constants import DATA_DIR, PROJECT_DISPLAY_NAME, PROJECT_VERSION
+from src.constants import DATA_DIR, PROJECT_VERSION
 from src.utils.logging import get_logger, setup_logging
 
 logger = get_logger("main")
@@ -40,6 +39,7 @@ def bootstrap() -> None:
     # Load .env file if present (for dev/testing, NOT production)
     try:
         from dotenv import load_dotenv
+
         load_dotenv()
     except ImportError:
         pass  # python-dotenv is optional

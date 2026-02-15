@@ -13,8 +13,6 @@ plugged into the gateway's auth middleware.
 from __future__ import annotations
 
 import hashlib
-import hmac
-import os
 import secrets
 import time
 import urllib.parse
@@ -31,6 +29,7 @@ logger = get_logger("sso")
 @dataclass
 class SSOConfig:
     """SSO configuration."""
+
     provider: str  # "saml", "oidc", "oauth2", "apikey"
     client_id: str = ""
     client_secret: str = ""
@@ -45,6 +44,7 @@ class SSOConfig:
 @dataclass
 class SSOUser:
     """User information from SSO provider."""
+
     external_id: str
     email: str
     name: str = ""
@@ -160,7 +160,8 @@ class SAMLProvider:
     async def get_login_url(self) -> str:
         """Get the SAML login redirect URL."""
         try:
-            from onelogin.saml2.auth import OneLogin_Saml2_Auth
+            from onelogin.saml2.auth import OneLogin_Saml2_Auth  # noqa: F401
+
             # Full SAML implementation would go here
             return f"{self.config.saml_metadata_url}/login"
         except ImportError:
@@ -170,7 +171,8 @@ class SAMLProvider:
     async def process_response(self, saml_response: str) -> SSOUser | None:
         """Process SAML response and extract user info."""
         try:
-            from onelogin.saml2.auth import OneLogin_Saml2_Auth
+            from onelogin.saml2.auth import OneLogin_Saml2_Auth  # noqa: F401
+
             # Full SAML response processing would go here
             # This is a simplified version
             return None

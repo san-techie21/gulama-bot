@@ -41,6 +41,7 @@ class GitHubSkill(BaseSkill):
         if not self._token:
             try:
                 from src.security.secrets_vault import SecretsVault
+
                 vault = SecretsVault()
                 if vault.is_initialized:
                     self._token = vault.get("GITHUB_TOKEN") or ""
@@ -73,9 +74,14 @@ class GitHubSkill(BaseSkill):
                         "action": {
                             "type": "string",
                             "enum": [
-                                "list_repos", "create_issue", "list_issues",
-                                "create_pr", "get_pr", "search_code",
-                                "list_notifications", "star_repo",
+                                "list_repos",
+                                "create_issue",
+                                "list_issues",
+                                "create_pr",
+                                "get_pr",
+                                "search_code",
+                                "list_notifications",
+                                "star_repo",
                             ],
                             "description": "The GitHub action to perform",
                         },
@@ -108,7 +114,8 @@ class GitHubSkill(BaseSkill):
         token = self._get_token()
         if not token:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="GITHUB_TOKEN not configured. Set it via environment variable or 'gulama vault set GITHUB_TOKEN'",
             )
 
@@ -133,8 +140,11 @@ class GitHubSkill(BaseSkill):
             logger.error("github_error", action=action, error=str(e))
             return SkillResult(success=False, output="", error=f"GitHub error: {str(e)[:400]}")
 
-    async def _api(self, token: str, method: str, path: str, json_data: dict | None = None) -> dict | list:
+    async def _api(
+        self, token: str, method: str, path: str, json_data: dict | None = None
+    ) -> dict | list:
         import httpx
+
         headers = {
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json",
@@ -148,7 +158,9 @@ class GitHubSkill(BaseSkill):
             elif method == "PUT":
                 resp = await client.put(f"{GITHUB_API}{path}", headers=headers, json=json_data)
             else:
-                resp = await client.request(method, f"{GITHUB_API}{path}", headers=headers, json=json_data)
+                resp = await client.request(
+                    method, f"{GITHUB_API}{path}", headers=headers, json=json_data
+                )
             resp.raise_for_status()
             return resp.json() if resp.content else {}
 
@@ -162,10 +174,20 @@ class GitHubSkill(BaseSkill):
             lines.append(f"- {r['full_name']} ({lang}, {stars} stars) — {desc}")
         return SkillResult(success=True, output="\n".join(lines) or "No repositories found.")
 
-    async def _create_issue(self, token: str, owner: str = "", repo: str = "", title: str = "",
-                            body: str = "", labels: list | None = None, **_: Any) -> SkillResult:
+    async def _create_issue(
+        self,
+        token: str,
+        owner: str = "",
+        repo: str = "",
+        title: str = "",
+        body: str = "",
+        labels: list | None = None,
+        **_: Any,
+    ) -> SkillResult:
         if not all([owner, repo, title]):
-            return SkillResult(success=False, output="", error="owner, repo, and title are required")
+            return SkillResult(
+                success=False, output="", error="owner, repo, and title are required"
+            )
         data: dict[str, Any] = {"title": title, "body": body}
         if labels:
             data["labels"] = labels
@@ -176,24 +198,43 @@ class GitHubSkill(BaseSkill):
             metadata={"issue_number": result["number"], "url": result["html_url"]},
         )
 
-    async def _list_issues(self, token: str, owner: str = "", repo: str = "",
-                           state: str = "open", **_: Any) -> SkillResult:
+    async def _list_issues(
+        self, token: str, owner: str = "", repo: str = "", state: str = "open", **_: Any
+    ) -> SkillResult:
         if not all([owner, repo]):
             return SkillResult(success=False, output="", error="owner and repo are required")
-        issues = await self._api(token, "GET", f"/repos/{owner}/{repo}/issues?state={state}&per_page=20")
+        issues = await self._api(
+            token, "GET", f"/repos/{owner}/{repo}/issues?state={state}&per_page=20"
+        )
         lines = []
         for i in issues:
             if "pull_request" not in i:
                 labels = ", ".join(l["name"] for l in i.get("labels", []))
-                lines.append(f"#{i['number']} [{i['state']}] {i['title']}" + (f" ({labels})" if labels else ""))
+                lines.append(
+                    f"#{i['number']} [{i['state']}] {i['title']}"
+                    + (f" ({labels})" if labels else "")
+                )
         return SkillResult(success=True, output="\n".join(lines) or "No issues found.")
 
-    async def _create_pr(self, token: str, owner: str = "", repo: str = "", title: str = "",
-                         body: str = "", head: str = "", base: str = "main", **_: Any) -> SkillResult:
+    async def _create_pr(
+        self,
+        token: str,
+        owner: str = "",
+        repo: str = "",
+        title: str = "",
+        body: str = "",
+        head: str = "",
+        base: str = "main",
+        **_: Any,
+    ) -> SkillResult:
         if not all([owner, repo, title, head]):
-            return SkillResult(success=False, output="", error="owner, repo, title, and head are required")
+            return SkillResult(
+                success=False, output="", error="owner, repo, title, and head are required"
+            )
         result = await self._api(
-            token, "POST", f"/repos/{owner}/{repo}/pulls",
+            token,
+            "POST",
+            f"/repos/{owner}/{repo}/pulls",
             {"title": title, "body": body, "head": head, "base": base},
         )
         return SkillResult(
@@ -202,10 +243,13 @@ class GitHubSkill(BaseSkill):
             metadata={"pr_number": result["number"], "url": result["html_url"]},
         )
 
-    async def _get_pr(self, token: str, owner: str = "", repo: str = "",
-                      number: int = 0, **_: Any) -> SkillResult:
+    async def _get_pr(
+        self, token: str, owner: str = "", repo: str = "", number: int = 0, **_: Any
+    ) -> SkillResult:
         if not all([owner, repo, number]):
-            return SkillResult(success=False, output="", error="owner, repo, and number are required")
+            return SkillResult(
+                success=False, output="", error="owner, repo, and number are required"
+            )
         pr = await self._api(token, "GET", f"/repos/{owner}/{repo}/pulls/{number}")
         return SkillResult(
             success=True,
@@ -223,6 +267,7 @@ class GitHubSkill(BaseSkill):
         if not query:
             return SkillResult(success=False, output="", error="query is required for code search")
         import httpx
+
         headers = {
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json",
@@ -250,7 +295,9 @@ class GitHubSkill(BaseSkill):
             lines.append(f"- [{subject.get('type', '')}] {repo}: {subject.get('title', '')}")
         return SkillResult(success=True, output="\n".join(lines) or "No unread notifications.")
 
-    async def _star_repo(self, token: str, owner: str = "", repo: str = "", **_: Any) -> SkillResult:
+    async def _star_repo(
+        self, token: str, owner: str = "", repo: str = "", **_: Any
+    ) -> SkillResult:
         if not all([owner, repo]):
             return SkillResult(success=False, output="", error="owner and repo are required")
         await self._api(token, "PUT", f"/user/starred/{owner}/{repo}")

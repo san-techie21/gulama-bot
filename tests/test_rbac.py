@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.security.rbac import RBACManager, RBACError, BUILT_IN_ROLES, PERMISSIONS
+from src.security.rbac import PERMISSIONS, RBACError, RBACManager
 
 
 class TestRBACManager:

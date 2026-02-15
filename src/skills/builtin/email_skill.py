@@ -59,8 +59,10 @@ class EmailSkill(BaseSkill):
         if self._configured:
             return
         import os
+
         try:
             from dotenv import load_dotenv
+
             load_dotenv()
         except ImportError:
             pass
@@ -151,7 +153,8 @@ class EmailSkill(BaseSkill):
         handler = dispatch.get(action)
         if not handler:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unknown email action: {action}. Use: list, read, send, search",
             )
 
@@ -159,7 +162,8 @@ class EmailSkill(BaseSkill):
 
         if not self._email_address or not self._password:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=(
                     "Email not configured. Set EMAIL_ADDRESS and EMAIL_PASSWORD env vars, "
                     "or run 'gulama vault set EMAIL_PASSWORD'."
@@ -173,7 +177,10 @@ class EmailSkill(BaseSkill):
             return SkillResult(success=False, output="", error=f"Email error: {str(e)[:300]}")
 
     async def _list_emails(
-        self, folder: str = "INBOX", limit: int = 10, **_: Any,
+        self,
+        folder: str = "INBOX",
+        limit: int = 10,
+        **_: Any,
     ) -> SkillResult:
         """List recent emails."""
         with imaplib.IMAP4_SSL(self._imap_host, self._imap_port) as imap:
@@ -201,16 +208,22 @@ class EmailSkill(BaseSkill):
 
             output = "\n".join(results) if results else "No emails found."
             return SkillResult(
-                success=True, output=output,
+                success=True,
+                output=output,
                 metadata={"count": len(results), "folder": folder},
             )
 
     async def _read_email(
-        self, email_id: str = "", folder: str = "INBOX", **_: Any,
+        self,
+        email_id: str = "",
+        folder: str = "INBOX",
+        **_: Any,
     ) -> SkillResult:
         """Read full email content."""
         if not email_id:
-            return SkillResult(success=False, output="", error="email_id is required for read action")
+            return SkillResult(
+                success=False, output="", error="email_id is required for read action"
+            )
 
         with imaplib.IMAP4_SSL(self._imap_host, self._imap_port) as imap:
             imap.login(self._email_address, self._password)
@@ -242,13 +255,19 @@ class EmailSkill(BaseSkill):
             return SkillResult(success=True, output=output)
 
     async def _send_email(
-        self, to: str = "", subject: str = "", body: str = "", **_: Any,
+        self,
+        to: str = "",
+        subject: str = "",
+        body: str = "",
+        **_: Any,
     ) -> SkillResult:
         """Send an email."""
         if not to:
             return SkillResult(success=False, output="", error="'to' is required for send action")
         if not subject:
-            return SkillResult(success=False, output="", error="'subject' is required for send action")
+            return SkillResult(
+                success=False, output="", error="'subject' is required for send action"
+            )
         if not body:
             return SkillResult(success=False, output="", error="'body' is required for send action")
 
@@ -271,11 +290,17 @@ class EmailSkill(BaseSkill):
         )
 
     async def _search_emails(
-        self, query: str = "", folder: str = "INBOX", limit: int = 10, **_: Any,
+        self,
+        query: str = "",
+        folder: str = "INBOX",
+        limit: int = 10,
+        **_: Any,
     ) -> SkillResult:
         """Search emails by IMAP query."""
         if not query:
-            return SkillResult(success=False, output="", error="'query' is required for search action")
+            return SkillResult(
+                success=False, output="", error="'query' is required for search action"
+            )
 
         with imaplib.IMAP4_SSL(self._imap_host, self._imap_port) as imap:
             imap.login(self._email_address, self._password)
@@ -299,6 +324,7 @@ class EmailSkill(BaseSkill):
 
             output = "\n".join(results) if results else f"No emails matching '{query}'."
             return SkillResult(
-                success=True, output=output,
+                success=True,
+                output=output,
                 metadata={"count": len(results), "query": query},
             )

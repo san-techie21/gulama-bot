@@ -13,8 +13,8 @@ Requires:
 from __future__ import annotations
 
 import asyncio
-import hmac
 import hashlib
+import hmac
 from typing import Any
 
 import httpx
@@ -92,9 +92,7 @@ class WhatsAppChannel(BaseChannel):
             logger.warning("whatsapp_no_app_secret", msg="Skipping signature verification")
             return True
 
-        expected = hmac.new(
-            self.app_secret.encode(), payload, hashlib.sha256
-        ).hexdigest()
+        expected = hmac.new(self.app_secret.encode(), payload, hashlib.sha256).hexdigest()
         provided = signature.replace("sha256=", "")
         return hmac.compare_digest(expected, provided)
 
@@ -169,9 +167,7 @@ class WhatsAppChannel(BaseChannel):
             if self._message_handler:
                 return await self._message_handler(content, user_id, "whatsapp")
             elif self._agent_brain:
-                result = await self._agent_brain.process_message(
-                    content, channel="whatsapp"
-                )
+                result = await self._agent_brain.process_message(content, channel="whatsapp")
                 return result.get("response", "No response.")
             return "Bot is not configured."
         except Exception as e:

@@ -42,7 +42,9 @@ class WebSearchSkill(BaseSkill):
         match operation:
             case "search":
                 if not query:
-                    return SkillResult(success=False, output="", error="Query is required for search")
+                    return SkillResult(
+                        success=False, output="", error="Query is required for search"
+                    )
                 return await self._search(query)
             case "fetch":
                 if not url:
@@ -50,7 +52,8 @@ class WebSearchSkill(BaseSkill):
                 return await self._fetch(url)
             case _:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"Unknown operation: {operation}",
                 )
 
@@ -62,9 +65,7 @@ class WebSearchSkill(BaseSkill):
             results = []
             with DDGS() as ddgs:
                 for r in ddgs.text(query, max_results=max_results):
-                    results.append(
-                        f"**{r['title']}**\n{r['href']}\n{r['body']}\n"
-                    )
+                    results.append(f"**{r['title']}**\n{r['href']}\n{r['body']}\n")
 
             if not results:
                 return SkillResult(success=True, output="No results found.")
@@ -77,7 +78,8 @@ class WebSearchSkill(BaseSkill):
 
         except ImportError:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="duckduckgo_search package not installed. Run: pip install duckduckgo-search",
             )
         except Exception as e:
@@ -87,20 +89,26 @@ class WebSearchSkill(BaseSkill):
         """Fetch and extract text from a URL."""
         # Validate URL
         from src.security.input_validator import InputValidator
+
         validator = InputValidator()
         result = validator.validate_url(url)
         if not result.valid:
             return SkillResult(
-                success=False, output="", error=result.blocked_reason,
+                success=False,
+                output="",
+                error=result.blocked_reason,
             )
 
         # Check egress filter
         from src.security.egress_filter import EgressFilter
+
         egress = EgressFilter()
         decision = egress.check_request(url=url, method="GET")
         if not decision.allowed:
             return SkillResult(
-                success=False, output="", error=f"Blocked by egress filter: {decision.reason}",
+                success=False,
+                output="",
+                error=f"Blocked by egress filter: {decision.reason}",
             )
 
         try:
@@ -129,7 +137,8 @@ class WebSearchSkill(BaseSkill):
 
         except ImportError:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="httpx package not installed. Run: pip install httpx",
             )
         except Exception as e:
@@ -167,6 +176,7 @@ class WebSearchSkill(BaseSkill):
         except Exception:
             # Fallback: strip all tags
             import re
+
             return re.sub(r"<[^>]+>", " ", html).strip()
 
     def get_tool_definition(self) -> dict[str, Any]:

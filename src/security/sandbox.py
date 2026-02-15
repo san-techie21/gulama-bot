@@ -18,12 +18,9 @@ from __future__ import annotations
 
 import asyncio
 import os
-import shutil
-import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 from src.constants import SENSITIVE_PATHS
 from src.utils.logging import get_logger
@@ -40,6 +37,7 @@ DEFAULT_MAX_OUTPUT_BYTES = 1024 * 1024  # 1MB
 @dataclass
 class SandboxConfig:
     """Configuration for the sandbox."""
+
     timeout: int = DEFAULT_TIMEOUT
     max_memory_mb: int = DEFAULT_MAX_MEMORY_MB
     max_output_bytes: int = DEFAULT_MAX_OUTPUT_BYTES
@@ -51,6 +49,7 @@ class SandboxConfig:
 @dataclass
 class SandboxResult:
     """Result of a sandboxed execution."""
+
     exit_code: int
     stdout: str
     stderr: str
@@ -113,7 +112,9 @@ class Sandbox:
                 case SandboxBackend.DOCKER:
                     return await self._exec_docker(cmd_str, cwd)
                 case SandboxBackend.WINDOWS_SANDBOX:
-                    return await self._exec_process(cmd_list, cwd)  # Windows Sandbox for full isolation
+                    return await self._exec_process(
+                        cmd_list, cwd
+                    )  # Windows Sandbox for full isolation
                 case _:
                     return await self._exec_process(cmd_list, cwd)
         except Exception as e:
@@ -129,12 +130,17 @@ class Sandbox:
         """Execute in bubblewrap sandbox (Linux)."""
         bwrap_cmd = [
             "bwrap",
-            "--ro-bind", "/", "/",          # Read-only root
-            "--tmpfs", "/tmp",               # Writable /tmp
-            "--dev", "/dev",                 # Basic devices
-            "--proc", "/proc",              # Process info
-            "--unshare-all",                 # Unshare all namespaces
-            "--die-with-parent",            # Kill on parent death
+            "--ro-bind",
+            "/",
+            "/",  # Read-only root
+            "--tmpfs",
+            "/tmp",  # Writable /tmp
+            "--dev",
+            "/dev",  # Basic devices
+            "--proc",
+            "/proc",  # Process info
+            "--unshare-all",  # Unshare all namespaces
+            "--die-with-parent",  # Kill on parent death
         ]
 
         # Add writable directories
@@ -179,14 +185,18 @@ class Sandbox:
     async def _exec_docker(self, cmd: str, cwd: str | None) -> SandboxResult:
         """Execute in a Docker container."""
         docker_cmd = [
-            "docker", "run",
+            "docker",
+            "run",
             "--rm",
-            "--network", "none" if not self.config.allow_network else "bridge",
+            "--network",
+            "none" if not self.config.allow_network else "bridge",
             f"--memory={self.config.max_memory_mb}m",
             "--cpus=1",
             "--read-only",
-            "--tmpfs", "/tmp:rw,noexec,nosuid,size=100m",
-            "--security-opt", "no-new-privileges",
+            "--tmpfs",
+            "/tmp:rw,noexec,nosuid,size=100m",
+            "--security-opt",
+            "no-new-privileges",
         ]
 
         if cwd:
@@ -221,7 +231,7 @@ class Sandbox:
                     process.communicate(),
                     timeout=self.config.timeout,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 process.kill()
                 await process.wait()
                 return SandboxResult(
@@ -232,8 +242,8 @@ class Sandbox:
                 )
 
             # Truncate output if too large
-            stdout_str = stdout.decode("utf-8", errors="replace")[:self.config.max_output_bytes]
-            stderr_str = stderr.decode("utf-8", errors="replace")[:self.config.max_output_bytes]
+            stdout_str = stdout.decode("utf-8", errors="replace")[: self.config.max_output_bytes]
+            stderr_str = stderr.decode("utf-8", errors="replace")[: self.config.max_output_bytes]
 
             return SandboxResult(
                 exit_code=process.returncode or 0,
@@ -252,12 +262,12 @@ class Sandbox:
     def _generate_apple_profile(self) -> str:
         """Generate an Apple sandbox profile."""
         rules = [
-            '(version 1)',
-            '(deny default)',
-            '(allow process-exec)',
-            '(allow process-fork)',
-            '(allow sysctl-read)',
-            '(allow file-read*)',  # Read-only filesystem
+            "(version 1)",
+            "(deny default)",
+            "(allow process-exec)",
+            "(allow process-fork)",
+            "(allow sysctl-read)",
+            "(allow file-read*)",  # Read-only filesystem
             '(allow file-write* (subpath "/tmp"))',  # Write only to /tmp
             '(allow file-write* (subpath "/dev/null"))',
             '(allow file-write* (subpath "/dev/zero"))',
@@ -284,17 +294,18 @@ class Sandbox:
     def _is_dangerous(command: str) -> bool:
         """Quick check for obviously dangerous commands."""
         import re
+
         dangerous_patterns = [
             r"rm\s+-rf\s+/\s*$",
             r"rm\s+-rf\s+/\*",
             r"rm\s+-rf\s+~",
-            r":\(\)\{.*:\|:.*\};:",           # Fork bomb (regex-escaped)
+            r":\(\)\{.*:\|:.*\};:",  # Fork bomb (regex-escaped)
             r">\s*/dev/sd[a-z]",
             r"mkfs\.",
             r"dd\s+if=.*of=/dev/sd",
-            r"chmod\s+(-R\s+)?777\s+/",       # Recursive 777 on root
-            r"curl.*\|\s*(bash|sh|sudo)",      # Pipe to shell
-            r"wget.*\|\s*(bash|sh|sudo)",      # Pipe to shell
+            r"chmod\s+(-R\s+)?777\s+/",  # Recursive 777 on root
+            r"curl.*\|\s*(bash|sh|sudo)",  # Pipe to shell
+            r"wget.*\|\s*(bash|sh|sudo)",  # Pipe to shell
         ]
         for pattern in dangerous_patterns:
             if re.search(pattern, command):

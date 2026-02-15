@@ -195,6 +195,7 @@ class PersonaManager:
         for toml_file in PERSONAS_DIR.glob("*.toml"):
             try:
                 import tomli
+
                 with open(toml_file, "rb") as f:
                     data = tomli.load(f)
                 persona_data = data.get("persona", data)
@@ -216,6 +217,7 @@ class PersonaManager:
         filepath = PERSONAS_DIR / f"{persona.name}.toml"
 
         import tomli_w
+
         data = {"persona": persona.to_dict()}
         with open(filepath, "wb") as f:
             tomli_w.dump(data, f)
@@ -304,4 +306,5 @@ class PersonaManager:
 
 class PersonaError(Exception):
     """Raised for persona-related errors."""
+
     pass

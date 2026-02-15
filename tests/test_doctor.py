@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
-from src.cli.doctor import SecurityDoctor, CheckResult
+from src.cli.doctor import CheckResult, SecurityDoctor
 
 
 class TestSecurityDoctor:
@@ -26,23 +24,27 @@ class TestSecurityDoctor:
 
     def test_secure_defaults_all_enabled(self):
         """With all security features enabled, secure defaults should pass."""
-        doctor = SecurityDoctor(config={
-            "sandbox_enabled": True,
-            "policy_engine_enabled": True,
-            "canary_tokens_enabled": True,
-            "egress_filtering_enabled": True,
-            "audit_logging_enabled": True,
-        })
+        doctor = SecurityDoctor(
+            config={
+                "sandbox_enabled": True,
+                "policy_engine_enabled": True,
+                "canary_tokens_enabled": True,
+                "egress_filtering_enabled": True,
+                "audit_logging_enabled": True,
+            }
+        )
         doctor.run_all_checks()
         defaults = next(r for r in doctor.results if r.name == "Secure defaults")
         assert defaults.status == "pass"
 
     def test_secure_defaults_disabled_features(self):
         """With security features disabled, secure defaults should fail."""
-        doctor = SecurityDoctor(config={
-            "sandbox_enabled": False,
-            "policy_engine_enabled": False,
-        })
+        doctor = SecurityDoctor(
+            config={
+                "sandbox_enabled": False,
+                "policy_engine_enabled": False,
+            }
+        )
         doctor.run_all_checks()
         defaults = next(r for r in doctor.results if r.name == "Secure defaults")
         assert defaults.status == "fail"

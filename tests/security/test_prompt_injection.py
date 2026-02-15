@@ -7,8 +7,6 @@ correctly detect and block prompt injection attempts.
 
 from __future__ import annotations
 
-import pytest
-
 from src.security.canary import CanarySystem
 from src.security.input_validator import InputValidator
 

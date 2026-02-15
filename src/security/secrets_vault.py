@@ -15,9 +15,7 @@ from __future__ import annotations
 
 import json
 import os
-import secrets
 from pathlib import Path
-from typing import Any
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
@@ -89,8 +87,8 @@ class SecretsVault:
             raise VaultError("Vault file is corrupted.")
 
         self._salt = raw[:SALT_SIZE]
-        nonce = raw[SALT_SIZE:SALT_SIZE + NONCE_SIZE]
-        ciphertext = raw[SALT_SIZE + NONCE_SIZE:]
+        nonce = raw[SALT_SIZE : SALT_SIZE + NONCE_SIZE]
+        ciphertext = raw[SALT_SIZE + NONCE_SIZE :]
 
         self._master_key = self._derive_key(master_password, self._salt)
 
@@ -223,4 +221,5 @@ class SecretsVault:
 
 class VaultError(Exception):
     """Raised for vault-related errors."""
+
     pass

@@ -13,7 +13,7 @@ Key behaviors:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from src.memory.store import MemoryStore
@@ -65,7 +65,7 @@ class MemorySummarizer:
         Returns:
             List of conversation IDs that were summarized.
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=self.summary_after_hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=self.summary_after_hours)
         cutoff_str = cutoff.isoformat()
 
         # Find unsummarized conversations that ended before the cutoff
@@ -80,9 +80,7 @@ class MemorySummarizer:
         for row in rows:
             conv_id = row["id"]
             try:
-                summary = await self._summarize_conversation(
-                    conv_id, llm_complete_fn
-                )
+                summary = await self._summarize_conversation(conv_id, llm_complete_fn)
                 if summary:
                     # Store summary on the conversation
                     self.memory_store.conn.execute(
@@ -149,9 +147,7 @@ class MemorySummarizer:
         if llm_complete_fn:
             try:
                 prompt = SUMMARIZE_PROMPT.format(conversation_text=conversation_text[:4000])
-                response = await llm_complete_fn([
-                    {"role": "user", "content": prompt}
-                ])
+                response = await llm_complete_fn([{"role": "user", "content": prompt}])
                 return response.strip()
             except Exception as e:
                 logger.warning("llm_summarization_failed", error=str(e))
@@ -176,7 +172,9 @@ class MemorySummarizer:
             topics.append(f"Topic: {first_content}")
 
         # Count exchanges
-        topics.append(f"Messages: {len(messages)} ({len(user_messages)} user, {len(assistant_messages)} assistant)")
+        topics.append(
+            f"Messages: {len(messages)} ({len(user_messages)} user, {len(assistant_messages)} assistant)"
+        )
 
         # Take last assistant message as conclusion
         if assistant_messages:
@@ -211,8 +209,7 @@ class MemorySummarizer:
     ) -> list[dict[str, str]]:
         """Use LLM to extract facts from messages."""
         conversation_text = "\n".join(
-            f"{m.get('role', 'unknown')}: {m.get('content', '')}"
-            for m in messages
+            f"{m.get('role', 'unknown')}: {m.get('content', '')}" for m in messages
         )
 
         prompt = (
@@ -223,9 +220,7 @@ class MemorySummarizer:
         )
 
         try:
-            response = await llm_complete_fn([
-                {"role": "user", "content": prompt}
-            ])
+            response = await llm_complete_fn([{"role": "user", "content": prompt}])
             return self._parse_facts(response)
         except Exception as e:
             logger.warning("llm_fact_extraction_failed", error=str(e))
@@ -243,7 +238,7 @@ class MemorySummarizer:
             if line.startswith("[") and "]" in line:
                 bracket_end = line.index("]")
                 category = line[1:bracket_end].strip().lower()
-                content = line[bracket_end + 1:].strip()
+                content = line[bracket_end + 1 :].strip()
                 if content:
                     facts.append({"category": category, "content": content})
             elif line.startswith("- "):
@@ -261,28 +256,40 @@ class MemorySummarizer:
 
             # Detect preferences
             preference_markers = [
-                "i prefer", "i like", "i want", "i need",
-                "always use", "never use", "my favorite",
+                "i prefer",
+                "i like",
+                "i want",
+                "i need",
+                "always use",
+                "never use",
+                "my favorite",
             ]
             for marker in preference_markers:
                 if marker in content:
-                    facts.append({
-                        "category": "preference",
-                        "content": msg.get("content", "")[:200],
-                    })
+                    facts.append(
+                        {
+                            "category": "preference",
+                            "content": msg.get("content", "")[:200],
+                        }
+                    )
                     break
 
             # Detect decisions
             decision_markers = [
-                "let's go with", "i decided", "we'll use",
-                "the plan is", "i chose",
+                "let's go with",
+                "i decided",
+                "we'll use",
+                "the plan is",
+                "i chose",
             ]
             for marker in decision_markers:
                 if marker in content:
-                    facts.append({
-                        "category": "decision",
-                        "content": msg.get("content", "")[:200],
-                    })
+                    facts.append(
+                        {
+                            "category": "decision",
+                            "content": msg.get("content", "")[:200],
+                        }
+                    )
                     break
 
         return facts[:10]  # Cap at 10 facts per conversation

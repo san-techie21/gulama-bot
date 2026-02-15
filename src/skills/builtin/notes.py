@@ -44,7 +44,8 @@ class NotesSkill(BaseSkill):
                 return await self._list(kwargs.get("category"))
             case _:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"Unknown operation: {operation}",
                 )
 
@@ -58,6 +59,7 @@ class NotesSkill(BaseSkill):
             category = "knowledge"
 
         from src.memory.store import MemoryStore
+
         store = MemoryStore()
         store.open()
         fact_id = store.add_fact(category=category, content=content)
@@ -75,6 +77,7 @@ class NotesSkill(BaseSkill):
             return SkillResult(success=False, output="", error="Query is required")
 
         from src.memory.store import MemoryStore
+
         store = MemoryStore()
         store.open()
         facts = store.search_facts(query, limit=10)
@@ -96,6 +99,7 @@ class NotesSkill(BaseSkill):
     async def _list(self, category: str | None = None) -> SkillResult:
         """List facts, optionally filtered by category."""
         from src.memory.store import MemoryStore
+
         store = MemoryStore()
         store.open()
         facts = store.get_facts(category=category, limit=20)

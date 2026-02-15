@@ -14,8 +14,7 @@ from __future__ import annotations
 
 import importlib.util
 import textwrap
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import UTC, datetime
 from typing import Any
 
 from src.constants import SKILLS_DIR
@@ -98,12 +97,15 @@ class SelfModifierSkill(BaseSkill):
             logger.error("self_modify_error", action=action, error=str(e))
             return SkillResult(success=False, output="", error=f"Self-modify error: {str(e)[:400]}")
 
-    async def _create(self, skill_name: str = "", code: str = "",
-                      description: str = "", **_: Any) -> SkillResult:
+    async def _create(
+        self, skill_name: str = "", code: str = "", description: str = "", **_: Any
+    ) -> SkillResult:
         if not skill_name or not code:
             return SkillResult(success=False, output="", error="skill_name and code are required")
         if not skill_name.replace("_", "").isalnum():
-            return SkillResult(success=False, output="", error="skill_name must be alphanumeric with underscores")
+            return SkillResult(
+                success=False, output="", error="skill_name must be alphanumeric with underscores"
+            )
 
         danger = self._security_scan(code)
         if danger:
@@ -111,22 +113,28 @@ class SelfModifierSkill(BaseSkill):
 
         skill_file = AUTHORED_DIR / f"{skill_name}.py"
         if skill_file.exists():
-            return SkillResult(success=False, output="", error=f"Skill '{skill_name}' exists. Use 'update'.")
+            return SkillResult(
+                success=False, output="", error=f"Skill '{skill_name}' exists. Use 'update'."
+            )
 
         validation = self._validate_skill_code(code)
         if not validation["valid"]:
-            return SkillResult(success=False, output="", error=f"Invalid code: {validation['error']}")
+            return SkillResult(
+                success=False, output="", error=f"Invalid code: {validation['error']}"
+            )
 
         header = textwrap.dedent(f'''\
             """
             Auto-authored skill: {skill_name}
             Description: {description or 'No description'}
-            Created: {datetime.now(timezone.utc).isoformat()}
+            Created: {datetime.now(UTC).isoformat()}
             """
         ''')
         skill_file.write_text(header + "\n" + code, encoding="utf-8")
         logger.info("skill_created", name=skill_name)
-        return SkillResult(success=True, output=f"Skill '{skill_name}' created. Use 'test' to verify.")
+        return SkillResult(
+            success=True, output=f"Skill '{skill_name}' created. Use 'test' to verify."
+        )
 
     async def _update(self, skill_name: str = "", code: str = "", **_: Any) -> SkillResult:
         if not skill_name or not code:
@@ -139,7 +147,9 @@ class SelfModifierSkill(BaseSkill):
             return SkillResult(success=False, output="", error=f"Security violation: {danger}")
         validation = self._validate_skill_code(code)
         if not validation["valid"]:
-            return SkillResult(success=False, output="", error=f"Invalid code: {validation['error']}")
+            return SkillResult(
+                success=False, output="", error=f"Invalid code: {validation['error']}"
+            )
 
         backup = AUTHORED_DIR / f"{skill_name}.py.bak"
         backup.write_text(skill_file.read_text(encoding="utf-8"), encoding="utf-8")
@@ -147,18 +157,22 @@ class SelfModifierSkill(BaseSkill):
         header = textwrap.dedent(f'''\
             """
             Auto-authored skill: {skill_name} (updated)
-            Updated: {datetime.now(timezone.utc).isoformat()}
+            Updated: {datetime.now(UTC).isoformat()}
             """
         ''')
         skill_file.write_text(header + "\n" + code, encoding="utf-8")
         logger.info("skill_updated", name=skill_name)
-        return SkillResult(success=True, output=f"Skill '{skill_name}' updated. Old version backed up.")
+        return SkillResult(
+            success=True, output=f"Skill '{skill_name}' updated. Old version backed up."
+        )
 
     async def _list(self, **_: Any) -> SkillResult:
         skills = [f.stem for f in AUTHORED_DIR.glob("*.py") if not f.name.startswith("_")]
         if not skills:
             return SkillResult(success=True, output="No authored skills found.")
-        return SkillResult(success=True, output="Authored skills:\n" + "\n".join(f"- {s}" for s in sorted(skills)))
+        return SkillResult(
+            success=True, output="Authored skills:\n" + "\n".join(f"- {s}" for s in sorted(skills))
+        )
 
     async def _delete(self, skill_name: str = "", **_: Any) -> SkillResult:
         if not skill_name:
@@ -254,7 +268,11 @@ class SelfModifierSkill(BaseSkill):
                 spec.loader.exec_module(module)
                 for attr_name in dir(module):
                     attr = getattr(module, attr_name)
-                    if isinstance(attr, type) and issubclass(attr, BaseSkill) and attr is not BaseSkill:
+                    if (
+                        isinstance(attr, type)
+                        and issubclass(attr, BaseSkill)
+                        and attr is not BaseSkill
+                    ):
                         skills.append(attr())
                         logger.info("authored_skill_loaded", name=skill_file.stem)
                         break

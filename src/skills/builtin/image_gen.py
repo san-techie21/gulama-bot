@@ -42,6 +42,7 @@ class ImageGenSkill(BaseSkill):
             return
         try:
             from dotenv import load_dotenv
+
             load_dotenv()
         except ImportError:
             pass
@@ -127,7 +128,8 @@ class ImageGenSkill(BaseSkill):
         handler = dispatch.get(action)
         if not handler:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unknown image action: {action}. Use: generate, edit, variations",
             )
 
@@ -137,7 +139,8 @@ class ImageGenSkill(BaseSkill):
             return await handler(**{k: v for k, v in kwargs.items() if k != "action"})
         except ImportError:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="httpx is required for image generation. Install: pip install httpx",
             )
         except Exception as e:
@@ -166,12 +169,19 @@ class ImageGenSkill(BaseSkill):
             return await self._generate_replicate(prompt, output_path)
         else:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error=f"Unknown image backend: {self._backend}",
             )
 
     async def _generate_dalle(
-        self, prompt: str, output_path: str, size: str, quality: str, style: str, n: int,
+        self,
+        prompt: str,
+        output_path: str,
+        size: str,
+        quality: str,
+        style: str,
+        n: int,
     ) -> SkillResult:
         """Generate image using OpenAI DALL-E 3."""
         api_key = os.getenv("OPENAI_API_KEY", "")
@@ -200,7 +210,8 @@ class ImageGenSkill(BaseSkill):
 
             if response.status_code != 200:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"DALL-E API error: {response.status_code} — {response.text[:200]}",
                 )
 
@@ -210,6 +221,7 @@ class ImageGenSkill(BaseSkill):
 
             if output_path and "b64_json" in image_data:
                 import base64
+
                 img_bytes = base64.b64decode(image_data["b64_json"])
                 Path(output_path).parent.mkdir(parents=True, exist_ok=True)
                 Path(output_path).write_bytes(img_bytes)
@@ -227,7 +239,10 @@ class ImageGenSkill(BaseSkill):
                 )
 
     async def _generate_stability(
-        self, prompt: str, output_path: str, size: str,
+        self,
+        prompt: str,
+        output_path: str,
+        size: str,
     ) -> SkillResult:
         """Generate image using Stability AI."""
         api_key = os.getenv("STABILITY_API_KEY", "")
@@ -257,7 +272,8 @@ class ImageGenSkill(BaseSkill):
 
             if response.status_code != 200:
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"Stability API error: {response.status_code}",
                 )
 
@@ -267,6 +283,7 @@ class ImageGenSkill(BaseSkill):
                 return SkillResult(success=False, output="", error="No image generated")
 
             import base64
+
             img_bytes = base64.b64decode(artifacts[0]["base64"])
 
             if output_path:
@@ -308,7 +325,8 @@ class ImageGenSkill(BaseSkill):
 
             if response.status_code not in (200, 201):
                 return SkillResult(
-                    success=False, output="",
+                    success=False,
+                    output="",
                     error=f"Replicate API error: {response.status_code}",
                 )
 
@@ -317,6 +335,7 @@ class ImageGenSkill(BaseSkill):
 
             # Poll for completion (max 60s)
             import asyncio
+
             for _ in range(60):
                 poll = await client.get(
                     prediction_url,
@@ -348,7 +367,8 @@ class ImageGenSkill(BaseSkill):
 
                 elif status == "failed":
                     return SkillResult(
-                        success=False, output="",
+                        success=False,
+                        output="",
                         error=f"Generation failed: {status_data.get('error', 'unknown')}",
                     )
 
@@ -359,13 +379,15 @@ class ImageGenSkill(BaseSkill):
     async def _edit(self, **kwargs: Any) -> SkillResult:
         """Edit an existing image (DALL-E only)."""
         return SkillResult(
-            success=False, output="",
+            success=False,
+            output="",
             error="Image editing requires DALL-E 2 API. Use 'generate' with a descriptive prompt instead.",
         )
 
     async def _variations(self, **kwargs: Any) -> SkillResult:
         """Create variations of an image (DALL-E only)."""
         return SkillResult(
-            success=False, output="",
+            success=False,
+            output="",
             error="Image variations require DALL-E 2 API. Use 'generate' with a descriptive prompt instead.",
         )

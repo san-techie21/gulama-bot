@@ -11,8 +11,6 @@ import hashlib
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from src.security.skill_verifier import SkillVerifier
 from src.skills.signer import SkillSigner
 
@@ -58,11 +56,7 @@ class TestSkillTamperingPrevention:
             "/absolute/path/file.py",
         ]
         for path in dangerous_paths:
-            is_dangerous = (
-                path.startswith("/")
-                or path.startswith("\\")
-                or ".." in path
-            )
+            is_dangerous = path.startswith("/") or path.startswith("\\") or ".." in path
             assert is_dangerous, f"Should detect dangerous path: {path}"
 
     def test_safe_archive_paths(self):
@@ -73,11 +67,7 @@ class TestSkillTamperingPrevention:
             "my_skill/utils/helpers.py",
         ]
         for path in safe_paths:
-            is_dangerous = (
-                path.startswith("/")
-                or path.startswith("\\")
-                or ".." in path
-            )
+            is_dangerous = path.startswith("/") or path.startswith("\\") or ".." in path
             assert not is_dangerous, f"Should allow path: {path}"
 
     def test_package_skill_produces_hash(self):
@@ -85,9 +75,7 @@ class TestSkillTamperingPrevention:
         with tempfile.TemporaryDirectory() as tmpdir:
             skill_dir = Path(tmpdir) / "test_skill"
             skill_dir.mkdir()
-            (skill_dir / "skill.toml").write_text(
-                '[skill]\nname = "test"\nversion = "1.0.0"\n'
-            )
+            (skill_dir / "skill.toml").write_text('[skill]\nname = "test"\nversion = "1.0.0"\n')
             (skill_dir / "main.py").write_text("def run(): pass\n")
 
             output = Path(tmpdir) / "test_skill.tar.gz"
@@ -98,7 +86,9 @@ class TestSkillTamperingPrevention:
 
     def test_builtin_skill_verification(self):
         """Built-in skills should be auto-trusted."""
-        builtin_path = Path(__file__).parent.parent.parent / "src" / "skills" / "builtin" / "web_search.py"
+        builtin_path = (
+            Path(__file__).parent.parent.parent / "src" / "skills" / "builtin" / "web_search.py"
+        )
         if builtin_path.exists():
             assert self.verifier.verify_builtin(builtin_path)
 

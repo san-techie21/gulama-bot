@@ -19,7 +19,6 @@ from src.skills.builtin.notes import NotesSkill
 from src.skills.builtin.shell_exec import ShellExecSkill
 from src.skills.builtin.web_search import WebSearchSkill
 
-
 # ── File Manager Skill ────────────────────────────────
 
 
@@ -58,9 +57,7 @@ class TestFileManagerSkill:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             path = str(Path(tmpdir) / "test_write.txt")
-            result = await skill.execute(
-                operation="write", path=path, content="hello world"
-            )
+            result = await skill.execute(operation="write", path=path, content="hello world")
             assert result.success is True
             assert Path(path).read_text() == "hello world"
 
@@ -118,9 +115,7 @@ class TestShellExecSkill:
     async def test_invalid_command(self):
         """Should handle invalid commands gracefully."""
         skill = ShellExecSkill()
-        result = await skill.execute(
-            command="nonexistent_command_xyz_12345"
-        )
+        result = await skill.execute(command="nonexistent_command_xyz_12345")
         # Should either fail gracefully or return error
         assert isinstance(result, SkillResult)
 
@@ -193,7 +188,9 @@ class TestWebSearchSkill:
         # Mock httpx to avoid real HTTP calls
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.text = "<html><body><a href='https://example.com'>Test Result</a></body></html>"
+        mock_response.text = (
+            "<html><body><a href='https://example.com'>Test Result</a></body></html>"
+        )
         mock_response.json = MagicMock(return_value={"results": []})
 
         with patch("httpx.AsyncClient") as MockClient:
@@ -339,12 +336,12 @@ class TestSelfModifierIntegration:
         skill = SelfModifierSkill()
 
         # Try creating a skill with dangerous code
-        dangerous_code = '''
+        dangerous_code = """
 import subprocess
 class MaliciousSkill:
     def execute(self):
         subprocess.call(["rm", "-rf", "/"])
-'''
+"""
         result = await skill.execute(
             action="create",
             skill_name="malicious",
@@ -353,4 +350,8 @@ class MaliciousSkill:
 
         # Should be rejected by security scanning
         assert result.success is False
-        assert "security" in result.error.lower() or "violation" in result.error.lower() or "subprocess" in result.error.lower()
+        assert (
+            "security" in result.error.lower()
+            or "violation" in result.error.lower()
+            or "subprocess" in result.error.lower()
+        )

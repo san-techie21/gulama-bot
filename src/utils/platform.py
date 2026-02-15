@@ -1,6 +1,5 @@
 """Cross-platform detection utilities for Gulama."""
 
-import os
 import platform
 import shutil
 from enum import Enum
@@ -89,8 +88,13 @@ def _is_windows_sandbox_available() -> bool:
         return False
     try:
         import subprocess
+
         result = subprocess.run(
-            ["powershell", "-Command", "Get-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM"],
+            [
+                "powershell",
+                "-Command",
+                "Get-WindowsOptionalFeature -Online -FeatureName Containers-DisposableClientVM",
+            ],
             capture_output=True,
             text=True,
             timeout=10,
@@ -103,6 +107,7 @@ def _is_windows_sandbox_available() -> bool:
 def get_data_dir() -> str:
     """Get the platform-appropriate data directory path."""
     from src.constants import DATA_DIR
+
     return str(DATA_DIR)
 
 
@@ -111,7 +116,7 @@ def is_wsl() -> bool:
     if detect_os() != OSType.LINUX:
         return False
     try:
-        with open("/proc/version", "r") as f:
+        with open("/proc/version") as f:
             return "microsoft" in f.read().lower()
     except Exception:
         return False

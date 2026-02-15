@@ -10,7 +10,6 @@ Features:
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 from src.channels.base import BaseChannel
@@ -61,6 +60,7 @@ class TelegramChannel(BaseChannel):
         # Load .env for tokens
         try:
             from dotenv import load_dotenv
+
             load_dotenv()
         except ImportError:
             pass
@@ -85,9 +85,7 @@ class TelegramChannel(BaseChannel):
         app.add_handler(CommandHandler("help", self._cmd_help))
         app.add_handler(CommandHandler("cost", self._cmd_cost))
         app.add_handler(CommandHandler("status", self._cmd_status))
-        app.add_handler(
-            MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message)
-        )
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message))
 
         logger.info("telegram_bot_polling", bot_token_last4=bot_token[-4:])
 
@@ -101,6 +99,7 @@ class TelegramChannel(BaseChannel):
             return False
 
         from src.gateway.config import load_config
+
         config = load_config()
         allowed = config.telegram.allowed_user_ids
 
@@ -113,7 +112,9 @@ class TelegramChannel(BaseChannel):
     async def _cmd_start(self, update: Any, context: Any) -> None:
         """Handle /start command."""
         if not self._check_user(update):
-            await update.message.reply_text("Unauthorized. Your user ID is not in the allowed list.")
+            await update.message.reply_text(
+                "Unauthorized. Your user ID is not in the allowed list."
+            )
             return
 
         await update.message.reply_text(

@@ -9,7 +9,6 @@ Supports:
 
 from __future__ import annotations
 
-import asyncio
 import json
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -85,10 +84,12 @@ async def websocket_chat(websocket: WebSocket) -> None:
             try:
                 data = json.loads(raw)
             except json.JSONDecodeError:
-                await websocket.send_json({
-                    "type": "error",
-                    "content": "Invalid JSON",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "content": "Invalid JSON",
+                    }
+                )
                 continue
 
             msg_type = data.get("type", "message")
@@ -100,10 +101,12 @@ async def websocket_chat(websocket: WebSocket) -> None:
                 continue
 
             if msg_type != "message" or not content:
-                await websocket.send_json({
-                    "type": "error",
-                    "content": "Invalid message format. Expected {type: 'message', content: '...'}",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "content": "Invalid message format. Expected {type: 'message', content: '...'}",
+                    }
+                )
                 continue
 
             # Process through agent brain
@@ -120,25 +123,31 @@ async def websocket_chat(websocket: WebSocket) -> None:
                     channel="websocket",
                 ):
                     if chunk.get("type") == "chunk":
-                        await websocket.send_json({
-                            "type": "chunk",
-                            "content": chunk["content"],
-                        })
+                        await websocket.send_json(
+                            {
+                                "type": "chunk",
+                                "content": chunk["content"],
+                            }
+                        )
                     elif chunk.get("type") == "complete":
-                        await websocket.send_json({
-                            "type": "complete",
-                            "content": chunk["content"],
-                            "conversation_id": chunk.get("conversation_id", ""),
-                            "tokens_used": chunk.get("tokens_used", 0),
-                            "cost_usd": chunk.get("cost_usd", 0.0),
-                        })
+                        await websocket.send_json(
+                            {
+                                "type": "complete",
+                                "content": chunk["content"],
+                                "conversation_id": chunk.get("conversation_id", ""),
+                                "tokens_used": chunk.get("tokens_used", 0),
+                                "cost_usd": chunk.get("cost_usd", 0.0),
+                            }
+                        )
 
             except Exception as e:
                 logger.error("ws_processing_error", error=str(e))
-                await websocket.send_json({
-                    "type": "error",
-                    "content": f"Processing error: {str(e)}",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "content": f"Processing error: {str(e)}",
+                    }
+                )
 
     except WebSocketDisconnect:
         manager.disconnect(session_id)

@@ -22,9 +22,8 @@ Features:
 
 from __future__ import annotations
 
-import asyncio
-import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 import litellm
 from litellm import acompletion, completion_cost
@@ -75,15 +74,15 @@ class LLMRouter:
         "xai": "xai/",
         "grok": "xai/",
         # Chinese providers
-        "moonshot": "openai/",      # Moonshot (Kimi) uses OpenAI-compatible API
-        "kimi": "openai/",          # Alias for moonshot
-        "qwen": "openai/",          # Qwen uses OpenAI-compatible API
-        "zhipu": "openai/",         # Zhipu (GLM) uses OpenAI-compatible
-        "baichuan": "openai/",      # Baichuan uses OpenAI-compatible
-        "yi": "openai/",            # Yi (01.AI) uses OpenAI-compatible
-        "minimax": "openai/",       # MiniMax uses OpenAI-compatible
-        "stepfun": "openai/",       # StepFun uses OpenAI-compatible
-        "doubao": "openai/",        # ByteDance Doubao uses OpenAI-compatible
+        "moonshot": "openai/",  # Moonshot (Kimi) uses OpenAI-compatible API
+        "kimi": "openai/",  # Alias for moonshot
+        "qwen": "openai/",  # Qwen uses OpenAI-compatible API
+        "zhipu": "openai/",  # Zhipu (GLM) uses OpenAI-compatible
+        "baichuan": "openai/",  # Baichuan uses OpenAI-compatible
+        "yi": "openai/",  # Yi (01.AI) uses OpenAI-compatible
+        "minimax": "openai/",  # MiniMax uses OpenAI-compatible
+        "stepfun": "openai/",  # StepFun uses OpenAI-compatible
+        "doubao": "openai/",  # ByteDance Doubao uses OpenAI-compatible
         # Inference platforms
         "together": "together_ai/",
         "fireworks": "fireworks_ai/",
@@ -95,10 +94,10 @@ class LLMRouter:
         "huggingface": "huggingface/",
         # Local / self-hosted
         "ollama": "ollama/",
-        "vllm": "openai/",          # vLLM uses OpenAI-compatible
-        "lmstudio": "openai/",      # LM Studio uses OpenAI-compatible
-        "llamacpp": "openai/",      # llama.cpp server uses OpenAI-compatible
-        "oobabooga": "openai/",     # text-generation-webui uses OpenAI-compatible
+        "vllm": "openai/",  # vLLM uses OpenAI-compatible
+        "lmstudio": "openai/",  # LM Studio uses OpenAI-compatible
+        "llamacpp": "openai/",  # llama.cpp server uses OpenAI-compatible
+        "oobabooga": "openai/",  # text-generation-webui uses OpenAI-compatible
         # Cloud providers
         "bedrock": "bedrock/",
         "azure": "azure/",
@@ -121,7 +120,9 @@ class LLMRouter:
 
         # Build the LiteLLM model string
         self.primary_model = self._build_model_string(
-            config.llm.provider, config.llm.model, config.llm.api_base,
+            config.llm.provider,
+            config.llm.model,
+            config.llm.api_base,
         )
         self.fallback_model = ""
         if config.llm_fallback.provider and config.llm_fallback.model:
@@ -272,7 +273,12 @@ class LLMRouter:
             try:
                 # Estimate tokens from content length
                 input_tokens = sum(
-                    len(m.get("content", "") if isinstance(m.get("content"), str) else str(m.get("content", ""))) // 4
+                    len(
+                        m.get("content", "")
+                        if isinstance(m.get("content"), str)
+                        else str(m.get("content", ""))
+                    )
+                    // 4
                     for m in messages
                 )
                 output_tokens = len(full_content) // 4
@@ -428,33 +434,86 @@ class LLMRouter:
     def list_supported_providers() -> list[dict[str, str]]:
         """List all supported LLM providers."""
         return [
-            {"code": "anthropic", "name": "Anthropic (Claude)", "models": "claude-sonnet-4-5-20250929, claude-opus-4-6, claude-haiku-4-5-20251001"},
+            {
+                "code": "anthropic",
+                "name": "Anthropic (Claude)",
+                "models": "claude-sonnet-4-5-20250929, claude-opus-4-6, claude-haiku-4-5-20251001",
+            },
             {"code": "openai", "name": "OpenAI", "models": "gpt-4o, gpt-4o-mini, o1, o3-mini"},
-            {"code": "google", "name": "Google (Gemini)", "models": "gemini-2.0-flash, gemini-2.0-pro"},
+            {
+                "code": "google",
+                "name": "Google (Gemini)",
+                "models": "gemini-2.0-flash, gemini-2.0-pro",
+            },
             {"code": "deepseek", "name": "DeepSeek", "models": "deepseek-chat, deepseek-reasoner"},
             {"code": "xai", "name": "xAI (Grok)", "models": "grok-2, grok-2-mini"},
-            {"code": "mistral", "name": "Mistral AI", "models": "mistral-large, mistral-small, codestral"},
-            {"code": "moonshot", "name": "Moonshot (Kimi)", "models": "moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k"},
-            {"code": "qwen", "name": "Alibaba (Qwen)", "models": "qwen-plus, qwen-max, qwen-turbo, qwen-vl-max"},
+            {
+                "code": "mistral",
+                "name": "Mistral AI",
+                "models": "mistral-large, mistral-small, codestral",
+            },
+            {
+                "code": "moonshot",
+                "name": "Moonshot (Kimi)",
+                "models": "moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k",
+            },
+            {
+                "code": "qwen",
+                "name": "Alibaba (Qwen)",
+                "models": "qwen-plus, qwen-max, qwen-turbo, qwen-vl-max",
+            },
             {"code": "zhipu", "name": "Zhipu AI (GLM)", "models": "glm-4, glm-4v, glm-3-turbo"},
             {"code": "yi", "name": "01.AI (Yi)", "models": "yi-large, yi-medium, yi-vision"},
             {"code": "baichuan", "name": "Baichuan", "models": "Baichuan4, Baichuan3-Turbo"},
             {"code": "minimax", "name": "MiniMax", "models": "abab6.5-chat, abab5.5-chat"},
-            {"code": "doubao", "name": "ByteDance (Doubao)", "models": "doubao-pro-128k, doubao-lite-128k"},
-            {"code": "groq", "name": "Groq", "models": "llama-3.3-70b-versatile, mixtral-8x7b-32768"},
-            {"code": "together", "name": "Together AI", "models": "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"},
-            {"code": "fireworks", "name": "Fireworks AI", "models": "accounts/fireworks/models/llama-v3p1-70b-instruct"},
-            {"code": "perplexity", "name": "Perplexity", "models": "llama-3.1-sonar-large-128k-online"},
+            {
+                "code": "doubao",
+                "name": "ByteDance (Doubao)",
+                "models": "doubao-pro-128k, doubao-lite-128k",
+            },
+            {
+                "code": "groq",
+                "name": "Groq",
+                "models": "llama-3.3-70b-versatile, mixtral-8x7b-32768",
+            },
+            {
+                "code": "together",
+                "name": "Together AI",
+                "models": "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+            },
+            {
+                "code": "fireworks",
+                "name": "Fireworks AI",
+                "models": "accounts/fireworks/models/llama-v3p1-70b-instruct",
+            },
+            {
+                "code": "perplexity",
+                "name": "Perplexity",
+                "models": "llama-3.1-sonar-large-128k-online",
+            },
             {"code": "cohere", "name": "Cohere", "models": "command-r-plus, command-r"},
-            {"code": "ollama", "name": "Ollama (local)", "models": "llama3.1, mistral, codellama, llava"},
-            {"code": "bedrock", "name": "AWS Bedrock", "models": "anthropic.claude-3-5-sonnet-20241022-v2:0"},
+            {
+                "code": "ollama",
+                "name": "Ollama (local)",
+                "models": "llama3.1, mistral, codellama, llava",
+            },
+            {
+                "code": "bedrock",
+                "name": "AWS Bedrock",
+                "models": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            },
             {"code": "azure", "name": "Azure OpenAI", "models": "gpt-4o (deployment name)"},
             {"code": "vertex", "name": "Google Vertex AI", "models": "gemini-2.0-flash"},
             {"code": "openrouter", "name": "OpenRouter", "models": "Any model via OpenRouter"},
-            {"code": "openai_compatible", "name": "OpenAI-compatible", "models": "Any model via custom endpoint"},
+            {
+                "code": "openai_compatible",
+                "name": "OpenAI-compatible",
+                "models": "Any model via custom endpoint",
+            },
         ]
 
 
 class LLMError(Exception):
     """Raised when all LLM providers fail."""
+
     pass

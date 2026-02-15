@@ -29,6 +29,7 @@ MAX_URL_LENGTH = 2048
 @dataclass
 class ValidationResult:
     """Result of input validation."""
+
     valid: bool
     sanitized: str
     warnings: list[str]
@@ -68,9 +69,7 @@ class InputValidator:
         # Check for prompt injection patterns (warn but don't block)
         injection_patterns = self._detect_injection_patterns(sanitized)
         if injection_patterns:
-            warnings.extend(
-                f"Potential prompt injection: {p}" for p in injection_patterns
-            )
+            warnings.extend(f"Potential prompt injection: {p}" for p in injection_patterns)
 
         return ValidationResult(
             valid=True,
@@ -107,6 +106,7 @@ class InputValidator:
 
         # Check for sensitive paths
         from src.constants import SENSITIVE_PATHS
+
         for sensitive in SENSITIVE_PATHS:
             if sensitive in normalized.lower():
                 return ValidationResult(
@@ -176,9 +176,9 @@ class InputValidator:
 
         # Block internal/metadata URLs
         blocked_hosts = [
-            "169.254.169.254",    # AWS metadata
+            "169.254.169.254",  # AWS metadata
             "metadata.google.internal",
-            "100.100.100.200",    # Azure metadata
+            "100.100.100.200",  # Azure metadata
             "localhost",
             "127.0.0.1",
             "0.0.0.0",
@@ -207,8 +207,7 @@ class InputValidator:
     def _remove_control_chars(text: str) -> str:
         """Remove control characters except newline and tab."""
         return "".join(
-            c for c in text
-            if c in ("\n", "\t", "\r") or (ord(c) >= 32 and ord(c) != 127)
+            c for c in text if c in ("\n", "\t", "\r") or (ord(c) >= 32 and ord(c) != 127)
         )
 
     @staticmethod

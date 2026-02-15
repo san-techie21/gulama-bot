@@ -114,7 +114,7 @@ class DiscordChannel(BaseChannel):
             if is_mention:
                 content = content.replace(f"<@{bot.user.id}>", "").strip()
             elif starts_with_prefix:
-                content = content[len(channel_self.command_prefix):].strip()
+                content = content[len(channel_self.command_prefix) :].strip()
 
             if not content:
                 return
@@ -139,9 +139,7 @@ class DiscordChannel(BaseChannel):
         @tree.command(name="status", description="Check Gulama status")
         async def status_command(interaction: discord.Interaction):
             if not channel_self._is_authorized(str(interaction.user.id)):
-                await interaction.response.send_message(
-                    "Unauthorized.", ephemeral=True
-                )
+                await interaction.response.send_message("Unauthorized.", ephemeral=True)
                 return
 
             status_text = (
@@ -155,9 +153,7 @@ class DiscordChannel(BaseChannel):
         @tree.command(name="persona", description="Switch Gulama persona")
         async def persona_command(interaction: discord.Interaction, name: str):
             if not channel_self._is_authorized(str(interaction.user.id)):
-                await interaction.response.send_message(
-                    "Unauthorized.", ephemeral=True
-                )
+                await interaction.response.send_message("Unauthorized.", ephemeral=True)
                 return
             await interaction.response.send_message(
                 f"Persona switching via Discord coming soon. Requested: {name}",
@@ -175,7 +171,6 @@ class DiscordChannel(BaseChannel):
 
     async def _process_message(self, message: Any, content: str) -> None:
         """Process an incoming message and send a response."""
-        import discord
 
         user_id = str(message.author.id)
 
@@ -194,9 +189,7 @@ class DiscordChannel(BaseChannel):
             if self._message_handler:
                 return await self._message_handler(content, user_id, "discord")
             elif self._agent_brain:
-                response = await self._agent_brain.process_message(
-                    content, channel="discord"
-                )
+                response = await self._agent_brain.process_message(content, channel="discord")
                 return response.get("response", "No response generated.")
             else:
                 return "Bot is not fully configured. No agent brain available."
@@ -243,7 +236,7 @@ class DiscordChannel(BaseChannel):
         """Truncate text to max length."""
         if len(text) <= max_length:
             return text
-        return text[:max_length - 3] + "..."
+        return text[: max_length - 3] + "..."
 
     @staticmethod
     def _split_response(text: str, max_length: int) -> list[str]:

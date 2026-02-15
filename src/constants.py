@@ -1,7 +1,6 @@
 """Project-wide constants for Gulama."""
 
 import platform
-import sys
 from pathlib import Path
 
 PROJECT_NAME = "gulama"
@@ -63,18 +62,18 @@ SENSITIVE_PATHS = [
 
 # Sensitive content patterns — NEVER log or expose
 SENSITIVE_PATTERNS = [
-    r"sk-[a-zA-Z0-9\-]{20,}",          # OpenAI keys (including sk-proj-...)
-    r"sk-ant-[a-zA-Z0-9\-]{20,}",     # Anthropic keys
-    r"AIza[a-zA-Z0-9\-_]{35}",        # Google API keys
-    r"ghp_[a-zA-Z0-9]{36}",           # GitHub tokens
-    r"glpat-[a-zA-Z0-9\-]{20}",       # GitLab tokens
-    r"xox[bpas]-[a-zA-Z0-9\-]+",      # Slack tokens
-    r"-----BEGIN.*PRIVATE KEY-----",    # Private keys
+    r"sk-[a-zA-Z0-9\-]{20,}",  # OpenAI keys (including sk-proj-...)
+    r"sk-ant-[a-zA-Z0-9\-]{20,}",  # Anthropic keys
+    r"AIza[a-zA-Z0-9\-_]{35}",  # Google API keys
+    r"ghp_[a-zA-Z0-9]{36}",  # GitHub tokens
+    r"glpat-[a-zA-Z0-9\-]{20}",  # GitLab tokens
+    r"xox[bpas]-[a-zA-Z0-9\-]+",  # Slack tokens
+    r"-----BEGIN.*PRIVATE KEY-----",  # Private keys
     r"[0-9]{4}[- ]?[0-9]{4}[- ]?[0-9]{4}[- ]?[0-9]{4}",  # Credit cards
     r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",  # Emails (for DLP)
-    r"AKIA[0-9A-Z]{16}",              # AWS access key IDs
+    r"AKIA[0-9A-Z]{16}",  # AWS access key IDs
     r"AWS_SECRET_ACCESS_KEY\s*=\s*\S+",  # AWS secret access keys
-    r"AWS_ACCESS_KEY_ID\s*=\s*\S+",    # AWS access key ID in env format
-    r"AZURE_[A-Z_]*KEY\s*=\s*\S+",    # Azure keys
-    r"gcp_[a-zA-Z0-9\-_]{20,}",       # GCP credentials
+    r"AWS_ACCESS_KEY_ID\s*=\s*\S+",  # AWS access key ID in env format
+    r"AZURE_[A-Z_]*KEY\s*=\s*\S+",  # Azure keys
+    r"gcp_[a-zA-Z0-9\-_]{20,}",  # GCP credentials
 ]

@@ -1,9 +1,5 @@
 """Tests for the tamper-proof audit logger."""
 
-import json
-
-import pytest
-
 from src.security.audit_logger import AuditLogger
 
 
@@ -32,16 +28,22 @@ class TestAuditLogger:
         logger = AuditLogger(audit_dir=audit_dir)
 
         entry1 = logger.log(
-            action="file:read", actor="agent",
-            resource="/tmp/a", decision="allow",
+            action="file:read",
+            actor="agent",
+            resource="/tmp/a",
+            decision="allow",
         )
         entry2 = logger.log(
-            action="shell:exec", actor="agent",
-            resource="ls -la", decision="ask_user",
+            action="shell:exec",
+            actor="agent",
+            resource="ls -la",
+            decision="ask_user",
         )
         entry3 = logger.log(
-            action="network:request", actor="agent",
-            resource="https://example.com", decision="deny",
+            action="network:request",
+            actor="agent",
+            resource="https://example.com",
+            decision="deny",
         )
 
         # Chain should link entries

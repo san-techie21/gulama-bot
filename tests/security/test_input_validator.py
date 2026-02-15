@@ -1,7 +1,5 @@
 """Tests for the input validator."""
 
-import pytest
-
 from src.security.input_validator import InputValidator
 
 

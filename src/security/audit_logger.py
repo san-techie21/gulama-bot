@@ -18,9 +18,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -33,12 +32,13 @@ logger = get_logger("audit")
 @dataclass
 class AuditEntry:
     """A single audit log entry."""
+
     timestamp: str
     action: str
-    actor: str          # "user", "agent", "system"
+    actor: str  # "user", "agent", "system"
     resource: str
-    decision: str       # "allow", "deny", "ask_user"
-    policy: str         # Policy that made the decision
+    decision: str  # "allow", "deny", "ask_user"
+    policy: str  # Policy that made the decision
     detail: str = ""
     channel: str = ""
     prev_hash: str = ""  # Hash of previous entry (chain)
@@ -77,7 +77,7 @@ class AuditLogger:
         a hash chain linking it to the previous entry.
         """
         entry = AuditEntry(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             action=action,
             actor=actor,
             resource=resource,
@@ -137,14 +137,14 @@ class AuditLogger:
     def read_entries(self, date: str | None = None) -> list[AuditEntry]:
         """Read audit entries for a given date (or today)."""
         if date is None:
-            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         file_path = self.audit_dir / f"audit-{date}.jsonl"
         if not file_path.exists():
             return []
 
         entries = []
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -173,7 +173,7 @@ class AuditLogger:
 
     def _write_entry(self, entry: AuditEntry) -> None:
         """Append an entry to the current audit file."""
-        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date = datetime.now(UTC).strftime("%Y-%m-%d")
         file_path = self.audit_dir / f"audit-{date}.jsonl"
 
         with open(file_path, "a") as f:

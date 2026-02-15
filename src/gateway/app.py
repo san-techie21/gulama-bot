@@ -69,6 +69,7 @@ def create_app() -> FastAPI:
         )
         # Write PID file
         from src.constants import DATA_DIR
+
         pid_file = DATA_DIR / "gulama.pid"
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         pid_file.write_text(str(os.getpid()))
@@ -119,6 +120,7 @@ def create_app() -> FastAPI:
                 pass
 
         from src.constants import DATA_DIR
+
         pid_file = DATA_DIR / "gulama.pid"
         pid_file.unlink(missing_ok=True)
 
@@ -155,10 +157,10 @@ def _add_middleware(app: FastAPI, config) -> None:
 
 def _register_routes(app: FastAPI) -> None:
     """Register all API route handlers."""
-    from src.gateway.router import api_router
-    from src.gateway.health import health_router
-    from src.gateway.websocket import ws_router
     from src.gateway.debug_ws import debug_router
+    from src.gateway.health import health_router
+    from src.gateway.router import api_router
+    from src.gateway.websocket import ws_router
 
     app.include_router(health_router)
     app.include_router(api_router, prefix="/api/v1")

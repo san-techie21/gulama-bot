@@ -8,7 +8,7 @@ Uses data from the audit logger, policy engine, and security configuration.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -40,7 +40,7 @@ class ComplianceReporter:
         """Generate a security posture summary."""
         report: dict[str, Any] = {
             "report_type": "security_posture",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "version": "1.0",
             "sections": {},
         }
@@ -64,7 +64,7 @@ class ComplianceReporter:
             chain_valid = self.audit_logger.verify_chain()
             report["sections"]["audit_integrity"] = {
                 "chain_valid": chain_valid,
-                "last_verified": datetime.now(timezone.utc).isoformat(),
+                "last_verified": datetime.now(UTC).isoformat(),
             }
 
         # OWASP compliance
@@ -77,17 +77,15 @@ class ComplianceReporter:
 
         return report
 
-    async def generate_soc2_evidence(
-        self, days: int = 90
-    ) -> dict[str, Any]:
+    async def generate_soc2_evidence(self, days: int = 90) -> dict[str, Any]:
         """Generate SOC 2 Type II evidence collection."""
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         report: dict[str, Any] = {
             "report_type": "soc2_evidence",
             "period_start": cutoff.isoformat(),
-            "period_end": datetime.now(timezone.utc).isoformat(),
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "period_end": datetime.now(UTC).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "controls": {},
         }
 
@@ -142,7 +140,7 @@ class ComplianceReporter:
         """Generate ISO 27001 Annex A control mapping."""
         return {
             "report_type": "iso27001_mapping",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "controls": {
                 "A.5": {
                     "title": "Information security policies",
@@ -192,7 +190,7 @@ class ComplianceReporter:
         """Generate an incident report template."""
         return {
             "report_type": "incident",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "incident": {
                 "type": incident_type,
                 "severity": severity,
@@ -200,7 +198,7 @@ class ComplianceReporter:
                 "status": "investigating",
                 "timeline": [
                     {
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                         "action": "Incident detected and report generated",
                     }
                 ],
@@ -235,7 +233,9 @@ class ComplianceReporter:
                 "mitigation": "TOTP auth, per-tool scoped permissions, session isolation",
             },
             "ASI04_Supply_Chain": {
-                "status": "compliant" if config.get("skill_signature_required") else "non_compliant",
+                "status": "compliant"
+                if config.get("skill_signature_required")
+                else "non_compliant",
                 "mitigation": "Sigstore cosign signing + SBOM + vulnerability scanning",
             },
             "ASI05_Code_Execution": {

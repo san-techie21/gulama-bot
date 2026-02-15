@@ -65,17 +65,27 @@ class NotionSkill(BaseSkill):
                         "action": {
                             "type": "string",
                             "enum": [
-                                "search", "get_page", "create_page",
-                                "update_page", "list_databases",
-                                "query_database", "append_block",
+                                "search",
+                                "get_page",
+                                "create_page",
+                                "update_page",
+                                "list_databases",
+                                "query_database",
+                                "append_block",
                             ],
                         },
                         "query": {"type": "string", "description": "Search query"},
                         "page_id": {"type": "string", "description": "Notion page ID"},
                         "database_id": {"type": "string", "description": "Notion database ID"},
-                        "parent_id": {"type": "string", "description": "Parent page/database ID for new pages"},
+                        "parent_id": {
+                            "type": "string",
+                            "description": "Parent page/database ID for new pages",
+                        },
                         "title": {"type": "string", "description": "Page title"},
-                        "content": {"type": "string", "description": "Content to append (markdown-like)"},
+                        "content": {
+                            "type": "string",
+                            "description": "Content to append (markdown-like)",
+                        },
                         "properties": {
                             "type": "object",
                             "description": "Properties to set on the page",
@@ -95,7 +105,8 @@ class NotionSkill(BaseSkill):
         token = self._get_token()
         if not token:
             return SkillResult(
-                success=False, output="",
+                success=False,
+                output="",
                 error="NOTION_TOKEN not configured. Set via env or 'gulama vault set NOTION_TOKEN'",
             )
 
@@ -121,13 +132,16 @@ class NotionSkill(BaseSkill):
 
     async def _api(self, token: str, method: str, path: str, json_data: dict | None = None) -> dict:
         import httpx
+
         headers = {
             "Authorization": f"Bearer {token}",
             "Notion-Version": NOTION_VERSION,
             "Content-Type": "application/json",
         }
         async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.request(method, f"{NOTION_API}{path}", headers=headers, json=json_data)
+            resp = await client.request(
+                method, f"{NOTION_API}{path}", headers=headers, json=json_data
+            )
             resp.raise_for_status()
             return resp.json() if resp.content else {}
 
@@ -180,8 +194,9 @@ class NotionSkill(BaseSkill):
         output = f"Title: {title}\nID: {page_id}\n\n" + "\n".join(content_lines)
         return SkillResult(success=True, output=output[:5000])
 
-    async def _create_page(self, token: str, parent_id: str = "", title: str = "",
-                           content: str = "", **_: Any) -> SkillResult:
+    async def _create_page(
+        self, token: str, parent_id: str = "", title: str = "", content: str = "", **_: Any
+    ) -> SkillResult:
         if not parent_id:
             return SkillResult(success=False, output="", error="parent_id is required")
         body: dict[str, Any] = {
@@ -207,8 +222,9 @@ class NotionSkill(BaseSkill):
             metadata={"page_id": result["id"]},
         )
 
-    async def _update_page(self, token: str, page_id: str = "",
-                           properties: dict | None = None, **_: Any) -> SkillResult:
+    async def _update_page(
+        self, token: str, page_id: str = "", properties: dict | None = None, **_: Any
+    ) -> SkillResult:
         if not page_id:
             return SkillResult(success=False, output="", error="page_id is required")
         body: dict[str, Any] = {"properties": properties or {}}
@@ -216,7 +232,12 @@ class NotionSkill(BaseSkill):
         return SkillResult(success=True, output=f"Page {page_id[:8]}... updated.")
 
     async def _list_databases(self, token: str, **_: Any) -> SkillResult:
-        results = await self._api(token, "POST", "/search", {"filter": {"property": "object", "value": "database"}, "page_size": 20})
+        results = await self._api(
+            token,
+            "POST",
+            "/search",
+            {"filter": {"property": "object", "value": "database"}, "page_size": 20},
+        )
         lines = []
         for db in results.get("results", []):
             title_items = db.get("title", [])
@@ -224,8 +245,9 @@ class NotionSkill(BaseSkill):
             lines.append(f"- {title} (ID: {db['id'][:8]}...)")
         return SkillResult(success=True, output="\n".join(lines) or "No databases found.")
 
-    async def _query_database(self, token: str, database_id: str = "",
-                              filter: dict | None = None, **_: Any) -> SkillResult:
+    async def _query_database(
+        self, token: str, database_id: str = "", filter: dict | None = None, **_: Any
+    ) -> SkillResult:
         if not database_id:
             return SkillResult(success=False, output="", error="database_id is required")
         body: dict[str, Any] = {"page_size": 20}
@@ -245,8 +267,9 @@ class NotionSkill(BaseSkill):
             lines.append(f"- {title or 'Untitled'} (ID: {page['id'][:8]}...)")
         return SkillResult(success=True, output="\n".join(lines) or "No results.")
 
-    async def _append_block(self, token: str, page_id: str = "",
-                            content: str = "", **_: Any) -> SkillResult:
+    async def _append_block(
+        self, token: str, page_id: str = "", content: str = "", **_: Any
+    ) -> SkillResult:
         if not page_id or not content:
             return SkillResult(success=False, output="", error="page_id and content are required")
         body = {

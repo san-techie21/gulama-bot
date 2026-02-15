@@ -54,8 +54,14 @@ class TwitterSkill(BaseSkill):
                         },
                         "query": {"type": "string", "description": "Search query"},
                         "text": {"type": "string", "description": "Tweet text to post"},
-                        "username": {"type": "string", "description": "Twitter username (without @)"},
-                        "max_results": {"type": "integer", "description": "Max results (10-100, default 10)"},
+                        "username": {
+                            "type": "string",
+                            "description": "Twitter username (without @)",
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Max results (10-100, default 10)",
+                        },
                     },
                     "required": ["action"],
                 },
@@ -69,7 +75,9 @@ class TwitterSkill(BaseSkill):
         action = kwargs.get("action", "")
         token = self._get_bearer()
         if not token:
-            return SkillResult(success=False, output="", error="TWITTER_BEARER_TOKEN not configured.")
+            return SkillResult(
+                success=False, output="", error="TWITTER_BEARER_TOKEN not configured."
+            )
 
         dispatch = {
             "search": self._search,
@@ -89,10 +97,13 @@ class TwitterSkill(BaseSkill):
             logger.error("twitter_error", action=action, error=str(e))
             return SkillResult(success=False, output="", error=f"Twitter error: {str(e)[:400]}")
 
-    async def _search(self, token: str, query: str = "", max_results: int = 10, **_: Any) -> SkillResult:
+    async def _search(
+        self, token: str, query: str = "", max_results: int = 10, **_: Any
+    ) -> SkillResult:
         if not query:
             return SkillResult(success=False, output="", error="query is required")
         import httpx
+
         headers = {"Authorization": f"Bearer {token}"}
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
@@ -124,7 +135,8 @@ class TwitterSkill(BaseSkill):
             return SkillResult(success=False, output="", error="text is required to post")
         # Posting requires OAuth 1.0a — simplified with bearer for now
         return SkillResult(
-            success=False, output="",
+            success=False,
+            output="",
             error="Tweet posting requires OAuth 1.0a credentials. Set TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_SECRET.",
         )
 
@@ -138,6 +150,7 @@ class TwitterSkill(BaseSkill):
         if not username:
             return SkillResult(success=False, output="", error="username is required")
         import httpx
+
         headers = {"Authorization": f"Bearer {token}"}
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
