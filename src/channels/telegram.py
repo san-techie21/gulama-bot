@@ -27,20 +27,28 @@ class TelegramChannel(BaseChannel):
         self._conversations: dict[int, str] = {}  # chat_id -> conversation_id
 
     def run(self) -> None:
-        """Start the Telegram bot."""
+        """Start the Telegram bot.
+
+        Uses python-telegram-bot's built-in event loop management
+        via Application.run_polling() (synchronous entry point).
+        """
         self._running = True
         logger.info("telegram_starting")
 
         try:
-            asyncio.run(self._start_bot())
+            self._start_bot_sync()
         except KeyboardInterrupt:
             logger.info("telegram_stopped_by_user")
         finally:
             self._running = False
 
-    async def _start_bot(self) -> None:
-        """Initialize and run the Telegram bot."""
-        from telegram import Update
+    def _start_bot_sync(self) -> None:
+        """Initialize and run the Telegram bot (synchronous).
+
+        python-telegram-bot v20+ manages its own asyncio event loop
+        internally via Application.run_polling(). We must NOT wrap it
+        in asyncio.run() or we get 'event loop already running' errors.
+        """
         from telegram.ext import (
             Application,
             CommandHandler,
@@ -50,9 +58,16 @@ class TelegramChannel(BaseChannel):
 
         from src.gateway.config import load_config
 
+        # Load .env for tokens
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass
+
         config = load_config()
 
-        # Load bot token from vault
+        # Load bot token
         bot_token = self._load_bot_token(config)
         if not bot_token:
             logger.error("telegram_no_token", msg="No Telegram bot token found.")
@@ -74,8 +89,11 @@ class TelegramChannel(BaseChannel):
             MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message)
         )
 
-        logger.info("telegram_started")
-        await app.run_polling(drop_pending_updates=True)
+        logger.info("telegram_bot_polling", bot_token_last4=bot_token[-4:])
+
+        # run_polling() is a SYNCHRONOUS method that manages its own event loop.
+        # This is the correct way to use python-telegram-bot v20+.
+        app.run_polling(drop_pending_updates=True)
 
     def _check_user(self, update: Any) -> bool:
         """Check if the user is allowed to use the bot."""

@@ -46,6 +46,7 @@ class AgentBrain:
         """Lazy-init the LLM router (needs API key from vault)."""
         if self._router is None:
             api_key = self._api_key or self._load_api_key()
+            self._auto_detect_provider(api_key)
             self._router = LLMRouter(config=self.config, api_key=api_key)
         return self._router
 
@@ -235,6 +236,57 @@ class AgentBrain:
             yield {"type": "error", "content": str(e)}
         finally:
             store.close()
+
+    def _auto_detect_provider(self, api_key: str) -> None:
+        """Auto-detect and override provider/model based on available API keys.
+
+        If the configured provider's API key isn't available but another
+        provider's key IS available, switch to the available one.
+        This makes Gulama truly model-agnostic — just set an API key and go.
+        """
+        import os
+
+        # Map of env var → (provider, default_model)
+        provider_map = {
+            "DEEPSEEK_API_KEY": ("deepseek", "deepseek-chat"),
+            "GROQ_API_KEY": ("groq", "llama-3.3-70b-versatile"),
+            "OPENAI_API_KEY": ("openai", "gpt-4o-mini"),
+            "ANTHROPIC_API_KEY": ("anthropic", "claude-sonnet-4-5-20250929"),
+        }
+
+        # Check if the currently configured provider has a valid key
+        current_provider = self.config.llm.provider
+        current_has_key = False
+        for env_var, (provider, _) in provider_map.items():
+            if provider == current_provider and os.getenv(env_var):
+                current_has_key = True
+                break
+
+        # Also check LLM_API_KEY as a generic key for the current provider
+        if os.getenv("LLM_API_KEY"):
+            current_has_key = True
+
+        if current_has_key:
+            return  # Current config is fine
+
+        # Current provider has no key — auto-detect from available keys
+        for env_var, (provider, model) in provider_map.items():
+            if os.getenv(env_var):
+                logger.info(
+                    "provider_auto_detected",
+                    configured=current_provider,
+                    detected=provider,
+                    model=model,
+                    reason=f"No key for {current_provider}, found {env_var}",
+                )
+                self.config.llm.provider = provider
+                self.config.llm.model = model
+                return
+
+        logger.warning(
+            "no_provider_detected",
+            msg="No API key found for any provider.",
+        )
 
     def _load_api_key(self) -> str:
         """Load API key from environment or secrets vault."""
