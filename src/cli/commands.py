@@ -59,7 +59,8 @@ def cli() -> None:
     help="Required for dangerous operations",
 )
 @click.option("--no-browser", is_flag=True, default=False, help="Don't open browser on start")
-@click.option("--channel", type=click.Choice(["gateway", "telegram", "discord", "slack", "cli"]), default="gateway")
+@click.option("--channel", type=click.Choice(["gateway", "telegram", "discord", "slack", "matrix", "cli"]), default="gateway")
+@click.option("--voice-wake", is_flag=True, default=False, help="Enable always-on voice wake word detection")
 def start(
     host: str,
     port: int,
@@ -67,6 +68,7 @@ def start(
     i_know_what_im_doing: bool,
     no_browser: bool,
     channel: str,
+    voice_wake: bool = False,
 ) -> None:
     """Start the Gulama agent."""
     from src.utils.logging import setup_logging
@@ -109,6 +111,10 @@ def start(
         )
     )
 
+    # Optional: voice wake word listener
+    if voice_wake:
+        _start_voice_wake()
+
     if channel == "cli":
         _start_cli_chat()
     elif channel == "gateway":
@@ -119,6 +125,8 @@ def start(
         _start_discord()
     elif channel == "slack":
         _start_slack()
+    elif channel == "matrix":
+        _start_matrix()
 
 
 def _start_gateway(host: str, port: int, no_browser: bool) -> None:
@@ -195,6 +203,52 @@ def _start_slack() -> None:
         "[yellow]Slack uses webhooks — start with 'gulama start' (gateway mode) "
         "and configure Slack to point to your webhook URLs.[/]"
     )
+
+
+def _start_matrix() -> None:
+    """Start the Matrix bot channel."""
+    import os
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
+    homeserver = os.getenv("MATRIX_HOMESERVER", "")
+    user_id = os.getenv("MATRIX_USER_ID", "")
+    access_token = os.getenv("MATRIX_ACCESS_TOKEN", "")
+
+    if not user_id or not access_token:
+        console.print(
+            "[red]MATRIX_USER_ID and MATRIX_ACCESS_TOKEN not set.[/]\n"
+            "Set them in .env or via 'gulama vault set MATRIX_ACCESS_TOKEN'"
+        )
+        return
+
+    from src.channels.matrix import MatrixChannel
+
+    channel = MatrixChannel(
+        homeserver=homeserver,
+        user_id=user_id,
+        access_token=access_token,
+    )
+
+    console.print("[green]Starting Matrix bot...[/]")
+    channel.run()
+
+
+def _start_voice_wake() -> None:
+    """Start always-on voice wake word listener in background."""
+    try:
+        from src.channels.voice_wake import AlwaysOnVoiceChannel
+
+        voice_channel = AlwaysOnVoiceChannel(wake_word="hey google")
+        voice_channel.start()
+        console.print("[green]Voice wake word listener started (say 'Hey Gulama').[/]")
+    except ImportError:
+        console.print("[yellow]Voice wake requires: pip install pvporcupine pyaudio[/]")
+    except Exception as e:
+        console.print(f"[yellow]Voice wake failed: {e}[/]")
 
 
 # ──────────────────────── gulama stop ────────────────────────

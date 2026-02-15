@@ -7,7 +7,7 @@ from pathlib import Path
 PROJECT_NAME = "gulama"
 PROJECT_DISPLAY_NAME = "Gulama"
 PROJECT_DESCRIPTION = "Secure, open-source personal AI agent platform"
-PROJECT_VERSION = "0.1.0"
+PROJECT_VERSION = "0.2.0"
 PROJECT_URL = "https://gulama.ai"
 PROJECT_REPO = "https://github.com/san-techie21/gulama-bot"
 PROJECT_LICENSE = "MIT"

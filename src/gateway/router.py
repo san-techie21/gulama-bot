@@ -385,3 +385,94 @@ async def get_audit_log(request: Request, limit: int = 50) -> dict:
         ],
         "count": len(recent),
     }
+
+
+# ──────────────────────── GulamaHub Marketplace ────────────────────────
+
+
+@api_router.get("/hub/search")
+async def hub_search(request: Request, query: str = "", tag: str = "") -> dict:
+    """Search the GulamaHub skill marketplace."""
+    from src.skills.marketplace import GulamaHub
+
+    hub = GulamaHub()
+    results = hub.search(query=query, tag=tag)
+    return {
+        "results": [
+            {
+                "name": p.name,
+                "version": p.version,
+                "author": p.author,
+                "description": p.description,
+                "downloads": p.downloads,
+                "rating": p.rating,
+                "tags": p.tags,
+            }
+            for p in results
+        ],
+        "count": len(results),
+    }
+
+
+@api_router.get("/hub/installed")
+async def hub_installed(request: Request) -> dict:
+    """List installed community skills."""
+    from src.skills.marketplace import GulamaHub
+
+    hub = GulamaHub()
+    return {"installed": hub.list_installed()}
+
+
+class HubUninstallRequest(BaseModel):
+    skill_name: str
+
+
+@api_router.post("/hub/uninstall")
+async def hub_uninstall(request: Request, body: HubUninstallRequest) -> dict:
+    """Uninstall a community skill."""
+    from src.skills.marketplace import GulamaHub
+
+    hub = GulamaHub()
+    if hub.uninstall(body.skill_name):
+        return {"status": "uninstalled", "skill": body.skill_name}
+    raise HTTPException(status_code=404, detail="Skill not found")
+
+
+# ──────────────────────── Channel Webhooks ────────────────────────
+
+
+@api_router.post("/channels/teams/webhook")
+async def teams_webhook(request: Request) -> dict:
+    """Handle incoming Microsoft Teams webhook events."""
+    body = await request.json()
+    from src.channels.teams import TeamsChannel
+
+    channel = TeamsChannel()
+    result = await channel.handle_activity(body)
+    return result
+
+
+@api_router.post("/channels/google-chat/webhook")
+async def google_chat_webhook(request: Request) -> dict:
+    """Handle incoming Google Chat webhook events."""
+    body = await request.json()
+    from src.channels.google_chat import GoogleChatChannel
+
+    channel = GoogleChatChannel()
+    result = await channel.handle_event(body)
+    return result
+
+
+# ──────────────────────── Debug ────────────────────────
+
+
+@api_router.get("/debug/events")
+async def get_debug_events(request: Request, limit: int = 50) -> dict:
+    """Get recent debug events (REST alternative to WebSocket debug)."""
+    from src.gateway.debug_ws import DebugEventBus
+
+    bus = DebugEventBus.get()
+    return {
+        "events": bus.get_history(min(limit, 200)),
+        "subscribers": bus.subscriber_count,
+    }

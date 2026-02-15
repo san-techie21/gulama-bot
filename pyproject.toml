@@ -7,7 +7,7 @@ packages = ["src"]
 
 [project]
 name = "gulama"
-version = "0.1.0"
+version = "0.2.0"
 description = "Secure, open-source personal AI agent platform — OpenClaw, but secure."
 readme = "README.md"
 license = "MIT"
@@ -15,15 +15,17 @@ requires-python = ">=3.12"
 authors = [
     { name = "Santosh", email = "santosh@astrafintechlabs.com" },
 ]
-keywords = ["ai", "agent", "security", "personal-assistant", "llm", "chatbot"]
+keywords = ["ai", "agent", "security", "personal-assistant", "llm", "chatbot", "automation"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Security",
+    "Typing :: Typed",
 ]
 
 dependencies = [
@@ -70,18 +72,55 @@ dev = [
     "bandit>=1.7",
     "pip-audit>=2.7",
 ]
+
+# Channel integrations
 discord = ["discord.py>=2.4"]
 slack = ["slack-sdk>=3.33"]
 whatsapp = []  # Uses httpx (already in core deps)
+matrix = ["matrix-nio[e2e]>=0.24"]
+teams = ["botbuilder-core>=4.15"]
+
+# Skills
 browser = ["playwright>=1.48"]
+browser-ai = ["playwright>=1.48", "browser-use>=0.1", "langchain-openai>=0.2"]
 email = []  # Uses stdlib imaplib/smtplib
 calendar = ["google-api-python-client>=2.150", "caldav>=1.4"]
+google-workspace = ["google-api-python-client>=2.150", "google-auth>=2.30"]
+voice = ["openai-whisper>=20240930", "elevenlabs>=1.0", "gtts>=2.5"]
+voice-wake = ["pvporcupine>=3.0", "pyaudio>=0.2"]
+image = ["openai>=1.50"]
+
+# Security
 saml = ["python3-saml>=1.16"]
+
+# Bundles
 all-channels = [
     "discord.py>=2.4",
     "slack-sdk>=3.33",
     "playwright>=1.48",
+    "matrix-nio[e2e]>=0.24",
 ]
+all-skills = [
+    "playwright>=1.48",
+    "google-api-python-client>=2.150",
+    "google-auth>=2.30",
+    "caldav>=1.4",
+    "openai>=1.50",
+]
+full = [
+    "discord.py>=2.4",
+    "slack-sdk>=3.33",
+    "playwright>=1.48",
+    "matrix-nio[e2e]>=0.24",
+    "google-api-python-client>=2.150",
+    "google-auth>=2.30",
+    "caldav>=1.4",
+    "openai>=1.50",
+    "browser-use>=0.1",
+    "langchain-openai>=0.2",
+]
+
+# Rust acceleration
 rust = ["maturin>=1.7"]
 
 [project.scripts]
@@ -92,6 +131,7 @@ Homepage = "https://gulama.ai"
 Repository = "https://github.com/san-techie21/gulama-bot"
 Documentation = "https://gulama.dev"
 Issues = "https://github.com/san-techie21/gulama-bot/issues"
+Changelog = "https://github.com/san-techie21/gulama-bot/blob/main/CHANGELOG.md"
 
 [tool.ruff]
 target-version = "py312"

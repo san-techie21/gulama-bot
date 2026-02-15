@@ -1,24 +1,94 @@
 # Gulama Bot — Docker Compose
-# Quick start: docker compose up
+#
+# Quick start:
+#   docker compose up -d
+#
+# With all channels:
+#   docker compose --profile full up -d
+#
+# Cloud deploy (DigitalOcean, AWS, etc.):
+#   docker compose -f docker-compose.yml -f docker-compose.cloud.yml up -d
 
 services:
   gulama:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: gulama-bot
     ports:
-      - "127.0.0.1:18789:18789"  # Loopback only
+      - "127.0.0.1:18789:18789"  # Loopback only — security first
     volumes:
       - gulama-data:/home/gulama/.gulama
+      - ./config:/app/config:ro  # Mount config read-only
+    env_file:
+      - .env  # Load secrets from .env file
     environment:
       - GULAMA_DEV=false
-      # Set LLM_API_KEY via .env file or docker secrets
-      # - LLM_API_KEY=sk-...
+      - GULAMA_DATA_DIR=/home/gulama/.gulama
     restart: unless-stopped
+    # Security hardening
     security_opt:
       - no-new-privileges:true
     read_only: true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=100m
+      - /tmp:rw,noexec,nosuid,size=200m
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:18789/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --- Optional: Redis for session storage and caching ---
+  redis:
+    image: redis:7-alpine
+    container_name: gulama-redis
+    profiles: ["full"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+
+  # --- Optional: ChromaDB for vector memory ---
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: gulama-chromadb
+    profiles: ["full"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    environment:
+      - ANONYMIZED_TELEMETRY=false
+      - ALLOW_RESET=false
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   gulama-data:
+    name: gulama-data
+  redis-data:
+    name: gulama-redis-data
+  chroma-data:
+    name: gulama-chroma-data

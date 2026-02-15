@@ -79,6 +79,15 @@ class SkillRegistry:
             ("voice", "src.skills.builtin.voice_skill", "VoiceSkill"),
             ("image_gen", "src.skills.builtin.image_gen", "ImageGenSkill"),
             ("smart_home", "src.skills.builtin.smart_home", "SmartHomeSkill"),
+            # Third-party integrations
+            ("github", "src.skills.builtin.github_skill", "GitHubSkill"),
+            ("notion", "src.skills.builtin.notion_skill", "NotionSkill"),
+            ("spotify", "src.skills.builtin.spotify_skill", "SpotifySkill"),
+            ("twitter", "src.skills.builtin.twitter_skill", "TwitterSkill"),
+            ("google_docs", "src.skills.builtin.google_docs_skill", "GoogleDocsSkill"),
+            ("productivity", "src.skills.builtin.productivity_skill", "ProductivitySkill"),
+            # Meta-skills
+            ("self_modify", "src.skills.self_modifier", "SelfModifierSkill"),
         ]
 
         for skill_name, module_path, class_name in optional_skills:

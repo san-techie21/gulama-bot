@@ -158,7 +158,9 @@ def _register_routes(app: FastAPI) -> None:
     from src.gateway.router import api_router
     from src.gateway.health import health_router
     from src.gateway.websocket import ws_router
+    from src.gateway.debug_ws import debug_router
 
     app.include_router(health_router)
     app.include_router(api_router, prefix="/api/v1")
     app.include_router(ws_router, prefix="/ws")
+    app.include_router(debug_router, prefix="/ws")

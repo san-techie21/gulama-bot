@@ -1,0 +1,48 @@
+# Gulama Bot — Cloud Deployment Override
+#
+# Use with: docker compose -f docker-compose.yml -f docker-compose.cloud.yml up -d
+#
+# This override file:
+# - Adds Caddy reverse proxy with auto-TLS
+# - Adds Watchtower for auto-updates
+# - Gulama stays loopback — Caddy handles public access
+
+services:
+  gulama:
+    environment:
+      - GULAMA_GATEWAY_HOST=0.0.0.0
+
+  # Caddy reverse proxy with automatic HTTPS
+  caddy:
+    image: caddy:2-alpine
+    container_name: gulama-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      - GULAMA_DOMAIN=${GULAMA_DOMAIN:-localhost}
+    restart: unless-stopped
+    depends_on:
+      - gulama
+
+  # Auto-update containers from registry
+  watchtower:
+    image: containrrr/watchtower
+    container_name: gulama-watchtower
+    profiles: ["auto-update"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=3600
+      - WATCHTOWER_INCLUDE_STOPPED=false
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:
