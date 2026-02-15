@@ -126,7 +126,7 @@ class SelfModifierSkill(BaseSkill):
         header = textwrap.dedent(f'''\
             """
             Auto-authored skill: {skill_name}
-            Description: {description or 'No description'}
+            Description: {description or "No description"}
             Created: {datetime.now(UTC).isoformat()}
             """
         ''')

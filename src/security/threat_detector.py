@@ -268,7 +268,7 @@ class ThreatDetector:
                 category=ThreatCategory.DATA_EXFILTRATION,
                 level=ThreatLevel.MEDIUM,
                 description=(
-                    f"Large data access: user {user_id} accessed " f"{volume} bytes of {data_type}"
+                    f"Large data access: user {user_id} accessed {volume} bytes of {data_type}"
                 ),
                 source_user=user_id,
                 details={"data_type": data_type, "volume": volume},

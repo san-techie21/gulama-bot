@@ -136,8 +136,7 @@ class SetupWizard:
         """Choose LLM provider and enter API key."""
         self.console.print("[bold blue]Step 2/5:[/] Choose LLM Provider\n")
         self.console.print(
-            "Gulama works with ANY LLM — 100+ providers supported.\n"
-            "Choose your primary provider:\n"
+            "Gulama works with ANY LLM — 100+ providers supported.\nChoose your primary provider:\n"
         )
 
         table = Table(show_header=False, box=None, padding=(0, 2))

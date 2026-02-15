@@ -36,7 +36,7 @@ class TestPolicyEngine:
                 )
                 result = engine.check(ctx)
                 assert result.decision == Decision.DENY, (
-                    f"Level {level} should deny access to {sensitive}, " f"got {result.decision}"
+                    f"Level {level} should deny access to {sensitive}, got {result.decision}"
                 )
 
     def test_hard_deny_dangerous_commands(self):
@@ -58,9 +58,9 @@ class TestPolicyEngine:
                 resource=cmd,
             )
             result = engine.check(ctx)
-            assert (
-                result.decision == Decision.DENY
-            ), f"Dangerous command should be denied: {cmd}, got {result.decision}"
+            assert result.decision == Decision.DENY, (
+                f"Dangerous command should be denied: {cmd}, got {result.decision}"
+            )
 
     def test_autonomy_level_0_asks_everything(self):
         """Level 0 should ask for every action."""
@@ -77,9 +77,9 @@ class TestPolicyEngine:
         for action in actions:
             ctx = PolicyContext(action=action, resource="/tmp/test")
             result = engine.check(ctx)
-            assert (
-                result.decision == Decision.ASK_USER
-            ), f"Level 0 should ask for {action}, got {result.decision}"
+            assert result.decision == Decision.ASK_USER, (
+                f"Level 0 should ask for {action}, got {result.decision}"
+            )
 
     def test_autonomy_level_1_allows_reads(self):
         """Level 1 should allow reads but ask for writes."""
@@ -118,9 +118,9 @@ class TestPolicyEngine:
                 resource="API_KEY",
             )
             result = engine.check(ctx)
-            assert (
-                result.decision == Decision.ASK_USER
-            ), f"Credential access at level {level} should ask user"
+            assert result.decision == Decision.ASK_USER, (
+                f"Credential access at level {level} should ask user"
+            )
 
     def test_system_path_denied(self):
         """System paths should be denied."""
@@ -130,9 +130,9 @@ class TestPolicyEngine:
         for path in system_paths:
             ctx = PolicyContext(action=ActionType.FILE_WRITE, resource=path)
             result = engine.check(ctx)
-            assert (
-                result.decision == Decision.DENY
-            ), f"Write to system path should be denied: {path}"
+            assert result.decision == Decision.DENY, (
+                f"Write to system path should be denied: {path}"
+            )
 
     def test_ssrf_prevention(self):
         """Cloud metadata endpoints should be blocked."""
