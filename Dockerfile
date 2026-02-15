@@ -20,9 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 
-# Copy only dependency files first for layer caching
-COPY pyproject.toml ./
+# Copy build metadata (required by hatchling build backend)
+COPY pyproject.toml MANIFEST.in LICENSE README.md CHANGELOG.md ./
 COPY src/ ./src/
+COPY media/ ./media/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \

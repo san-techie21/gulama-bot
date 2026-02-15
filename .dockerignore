@@ -1,0 +1,59 @@
+# Git
+.git
+.github
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv
+venv
+env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Test & CI artifacts
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov/
+coverage.xml
+.coverage
+*.cover
+bandit-report.json
+
+# Environment files (secrets!)
+.env
+.env.local
+.env.production
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker-in-docker
+docker-compose*.yml
+Dockerfile
+
+# Docs (not needed at runtime)
+CONTRIBUTING.md
+SECURITY.md
+docs/
+
+# Large media files (keep only Gulama.png for branding)
+*.mp4
+*.avi
+*.mov
