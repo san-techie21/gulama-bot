@@ -17,7 +17,7 @@ import asyncio
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from src.utils.logging import get_logger
@@ -25,7 +25,7 @@ from src.utils.logging import get_logger
 logger = get_logger("sub_agents")
 
 
-class SubAgentStatus(str, Enum):
+class SubAgentStatus(StrEnum):
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"

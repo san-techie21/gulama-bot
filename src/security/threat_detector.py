@@ -16,7 +16,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from src.utils.logging import get_logger
@@ -24,7 +24,7 @@ from src.utils.logging import get_logger
 logger = get_logger("threat_detector")
 
 
-class ThreatLevel(str, Enum):
+class ThreatLevel(StrEnum):
     """Threat severity levels."""
 
     INFO = "info"
@@ -34,7 +34,7 @@ class ThreatLevel(str, Enum):
     CRITICAL = "critical"
 
 
-class ThreatCategory(str, Enum):
+class ThreatCategory(StrEnum):
     """Categories of detected threats."""
 
     BRUTE_FORCE = "brute_force"

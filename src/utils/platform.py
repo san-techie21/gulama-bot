@@ -2,17 +2,17 @@
 
 import platform
 import shutil
-from enum import Enum
+from enum import StrEnum
 
 
-class OSType(str, Enum):
+class OSType(StrEnum):
     LINUX = "linux"
     MACOS = "macos"
     WINDOWS = "windows"
     UNKNOWN = "unknown"
 
 
-class SandboxBackend(str, Enum):
+class SandboxBackend(StrEnum):
     BUBBLEWRAP = "bubblewrap"
     GVISOR = "gvisor"
     APPLE_SANDBOX = "apple_sandbox"

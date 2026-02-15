@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from src.constants import SENSITIVE_PATHS
@@ -27,7 +27,7 @@ from src.utils.logging import get_logger
 logger = get_logger("policy_engine")
 
 
-class Decision(str, Enum):
+class Decision(StrEnum):
     """Policy decision outcomes."""
 
     ALLOW = "allow"
@@ -35,7 +35,7 @@ class Decision(str, Enum):
     ASK_USER = "ask_user"
 
 
-class ActionType(str, Enum):
+class ActionType(StrEnum):
     """Types of actions the agent can attempt."""
 
     FILE_READ = "file:read"
