@@ -45,6 +45,13 @@ vault.*
 .DS_Store
 Thumbs.db
 desktop.ini
+nul
+
+# Claude Code
+.claude/
+
+# PDFs (analysis docs, not source code)
+*.pdf
 
 # Docker
 docker-compose.override.yml

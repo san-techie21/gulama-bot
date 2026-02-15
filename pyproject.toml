@@ -63,8 +63,21 @@ dev = [
     "pytest-cov>=6.0",
     "ruff>=0.8",
     "mypy>=1.13",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
 ]
 discord = ["discord.py>=2.4"]
+slack = ["slack-sdk>=3.33"]
+whatsapp = []  # Uses httpx (already in core deps)
+browser = ["playwright>=1.48"]
+email = []  # Uses stdlib imaplib/smtplib
+calendar = ["google-api-python-client>=2.150", "caldav>=1.4"]
+saml = ["python3-saml>=1.16"]
+all-channels = [
+    "discord.py>=2.4",
+    "slack-sdk>=3.33",
+    "playwright>=1.48",
+]
 rust = ["maturin>=1.7"]
 
 [project.scripts]
@@ -94,3 +107,7 @@ python_version = "3.12"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]  # Allow assert

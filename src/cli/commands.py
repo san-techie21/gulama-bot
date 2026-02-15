@@ -255,67 +255,74 @@ def chat() -> None:
 
 
 @cli.command()
-def doctor() -> None:
-    """Run security health check."""
-    console.print(
-        Panel(
-            "[bold]Security Health Check[/]",
-            title="Gulama Doctor",
-            border_style="blue",
+@click.option("--json-output", is_flag=True, help="Output as JSON")
+def doctor(json_output: bool) -> None:
+    """Run comprehensive security health check."""
+    from src.cli.doctor import SecurityDoctor
+
+    # Load config if available
+    config: dict = {}
+    try:
+        from src.gateway.config import load_config
+        cfg = load_config()
+        config = cfg.model_dump()
+    except Exception:
+        pass
+
+    doc = SecurityDoctor(config=config)
+    doc.run_all_checks()
+
+    if json_output:
+        import json as json_mod
+        output = {
+            "summary": doc.get_summary(),
+            "results": [
+                {"name": r.name, "status": r.status, "message": r.message, "details": r.details}
+                for r in doc.results
+            ],
+        }
+        console.print(json_mod.dumps(output, indent=2))
+    else:
+        # Rich formatted output
+        console.print(
+            Panel(
+                "[bold]Comprehensive Security Health Check[/]",
+                title="Gulama Doctor",
+                border_style="blue",
+            )
         )
-    )
 
-    checks: list[tuple[str, bool, str]] = []
+        table = Table()
+        table.add_column("Check", style="cyan")
+        table.add_column("Result")
+        table.add_column("Details", style="dim")
 
-    # Check 1: Data directory permissions
-    if DATA_DIR.exists():
-        checks.append(("Data directory exists", True, str(DATA_DIR)))
-    else:
-        checks.append(("Data directory exists", False, "Run 'gulama setup' first"))
+        status_styles = {
+            "pass": "[green]PASS[/]",
+            "warn": "[yellow]WARN[/]",
+            "fail": "[red]FAIL[/]",
+            "skip": "[dim]SKIP[/]",
+        }
 
-    # Check 2: Vault initialized
-    from src.constants import VAULT_FILE
-    checks.append((
-        "Secrets vault initialized",
-        VAULT_FILE.exists(),
-        "Run 'gulama setup' to create vault",
-    ))
+        for r in doc.results:
+            status_str = status_styles.get(r.status, r.status)
+            detail = r.message
+            if r.details:
+                detail += f" | {r.details}"
+            table.add_row(r.name, status_str, detail)
 
-    # Check 3: Sandbox available
-    from src.utils.platform import detect_best_sandbox, SandboxBackend
-    sandbox = detect_best_sandbox()
-    is_good_sandbox = sandbox not in (SandboxBackend.PROCESS,)
-    checks.append((
-        f"Sandbox available ({sandbox.value})",
-        is_good_sandbox,
-        "Install bubblewrap (Linux), Docker, or enable Windows Sandbox" if not is_good_sandbox else "",
-    ))
+        console.print(table)
 
-    # Check 4: Config file
-    from src.constants import CONFIG_FILE
-    checks.append((
-        "Config file",
-        CONFIG_FILE.exists(),
-        str(CONFIG_FILE) if CONFIG_FILE.exists() else "Using defaults",
-    ))
-
-    # Display results
-    table = Table()
-    table.add_column("Check", style="cyan")
-    table.add_column("Result")
-    table.add_column("Details", style="dim")
-
-    for name, passed, detail in checks:
-        status_str = "[green]PASS[/]" if passed else "[red]FAIL[/]"
-        table.add_row(name, status_str, detail)
-
-    console.print(table)
-
-    failed = sum(1 for _, passed, _ in checks if not passed)
-    if failed:
-        console.print(f"\n[yellow]{failed} check(s) need attention.[/]")
-    else:
-        console.print("\n[green]All checks passed![/]")
+        summary = doc.get_summary()
+        grade_colors = {"EXCELLENT": "green", "GOOD": "green", "WARN": "yellow", "FAIL": "red"}
+        color = grade_colors.get(summary["grade"], "white")
+        console.print(
+            f"\n  Grade: [{color}]{summary['grade']}[/{color}]"
+            f"  |  Score: {summary['score']}"
+            f"  |  Passed: {summary['passed']}"
+            f"  |  Warnings: {summary['warned']}"
+            f"  |  Failed: {summary['failed']}"
+        )
 
 
 # ──────────────────────── gulama vault ────────────────────────
