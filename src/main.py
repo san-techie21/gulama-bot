@@ -37,6 +37,13 @@ def bootstrap() -> None:
     - Configuration
     - PID file
     """
+    # Load .env file if present (for dev/testing, NOT production)
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass  # python-dotenv is optional
+
     # Ensure data directory exists
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 

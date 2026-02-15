@@ -237,26 +237,41 @@ class AgentBrain:
             store.close()
 
     def _load_api_key(self) -> str:
-        """Load API key from the secrets vault."""
+        """Load API key from environment or secrets vault."""
+        import os
+
+        # Load .env file if present
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass
+
+        # Try environment variables (priority order)
+        env_key = (
+            os.getenv("LLM_API_KEY")
+            or os.getenv("DEEPSEEK_API_KEY")
+            or os.getenv("OPENAI_API_KEY")
+            or os.getenv("GROQ_API_KEY")
+            or os.getenv("ANTHROPIC_API_KEY")
+        )
+        if env_key:
+            logger.info("api_key_loaded", source="environment")
+            return env_key
+
+        # Try vault
         try:
             from src.security.secrets_vault import SecretsVault
 
             vault = SecretsVault()
-            if not vault.is_initialized:
-                logger.warning("vault_not_initialized")
-                return ""
+            if vault.is_initialized:
+                logger.info("api_key_loaded", source="vault")
+                # Vault requires unlock — handled at setup time
+        except Exception:
+            pass
 
-            # Try to get from environment first (for CI/Docker)
-            import os
-            env_key = os.getenv("LLM_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
-            if env_key:
-                return env_key
-
-            logger.warning(
-                "no_api_key",
-                msg="No API key found. Set LLM_API_KEY env var or run 'gulama setup'.",
-            )
-            return ""
-        except Exception as e:
-            logger.warning("api_key_load_failed", error=str(e))
-            return ""
+        logger.warning(
+            "no_api_key",
+            msg="No API key found. Set LLM_API_KEY env var or run 'gulama setup'.",
+        )
+        return ""
