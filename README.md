@@ -1,13 +1,24 @@
-# Gulama
+<p align="center">
+  <img src="media/Gulama.png" alt="Gulama" width="200"/>
+</p>
 
-**Secure, open-source personal AI agent platform — OpenClaw, but secure.**
+<h1 align="center">Gulama</h1>
 
-Gulama is a security-first AI assistant with **19 skills**, **8 channels**, a **signed skill marketplace**, and support for **100+ LLM providers**. Runs on macOS, Windows, Linux, Docker, and ARM.
+<p align="center">
+  <strong>Secure, open-source personal AI agent platform — OpenClaw, but secure.</strong>
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.12+](https://img.shields.io/badge/Python-3.12+-green.svg)](https://python.org)
-[![Tests](https://img.shields.io/badge/Tests-209%20passing-brightgreen.svg)]()
-[![Security](https://img.shields.io/badge/Security-15%2B%20mechanisms-red.svg)]()
+<p align="center">
+  Gulama is a security-first AI assistant with <b>19 skills</b>, <b>8 channels</b>, a <b>signed skill marketplace</b>, and support for <b>100+ LLM providers</b>. Runs on macOS, Windows, Linux, Docker, and ARM.
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.12+-green.svg" alt="Python 3.12+"/></a>
+  <a href="https://github.com/san-techie21/gulama-bot/actions"><img src="https://github.com/san-techie21/gulama-bot/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="https://pypi.org/project/gulama/"><img src="https://img.shields.io/pypi/v/gulama.svg" alt="PyPI"/></a>
+  <img src="https://img.shields.io/badge/Security-15%2B%20mechanisms-red.svg" alt="Security"/>
+</p>
 
 ## Why Gulama?
 
