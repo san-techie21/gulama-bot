@@ -26,6 +26,11 @@ import os
 import sys
 from pathlib import Path
 
+# Fix Windows console encoding for Unicode
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -42,7 +47,7 @@ def banner(msg: str) -> None:
 
 def check(name: str, ok: bool, detail: str = "") -> bool:
     status = "PASS" if ok else "FAIL"
-    icon = "\u2705" if ok else "\u274c"
+    icon = "[OK]" if ok else "[FAIL]"
     print(f"  {icon} {name}: {status}  {detail}")
     return ok
 
