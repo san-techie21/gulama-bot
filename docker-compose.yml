@@ -1,0 +1,24 @@
+# Gulama Bot — Docker Compose
+# Quick start: docker compose up
+
+services:
+  gulama:
+    build: .
+    container_name: gulama-bot
+    ports:
+      - "127.0.0.1:18789:18789"  # Loopback only
+    volumes:
+      - gulama-data:/home/gulama/.gulama
+    environment:
+      - GULAMA_DEV=false
+      # Set LLM_API_KEY via .env file or docker secrets
+      # - LLM_API_KEY=sk-...
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+
+volumes:
+  gulama-data:

@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Environment & Secrets — NEVER commit these
+.env
+.env.local
+.env.production
+*.age
+*.key
+*.pem
+vault.*
+!.env.example
+
+# Gulama data directory (may exist during dev)
+.gulama/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+docker-compose.override.yml
+
+# Rust
+target/
+
+# Node (web UI)
+node_modules/
+web/dist/
+
+# Logs
+*.log
+logs/
+
+# Cache
+cache/

@@ -1,0 +1,96 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gulama"
+version = "0.1.0"
+description = "Secure, open-source personal AI agent platform — OpenClaw, but secure."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+authors = [
+    { name = "Santosh", email = "santosh@astrafintechlabs.com" },
+]
+keywords = ["ai", "agent", "security", "personal-assistant", "llm", "chatbot"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Security",
+]
+
+dependencies = [
+    # Gateway
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "websockets>=14.0",
+    "httpx>=0.28",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+
+    # LLM — Universal (100+ providers)
+    "litellm>=1.56",
+
+    # Memory & Storage
+    "chromadb>=0.6",
+    "sentence-transformers>=3.3",
+
+    # Security
+    "cryptography>=44.0",
+    "pyotp>=2.9",
+    "keyring>=25.0",
+
+    # Channels
+    "python-telegram-bot>=22.0",
+
+    # CLI & Utilities
+    "click>=8.1",
+    "rich>=13.9",
+    "tomli>=2.2",
+    "tomli-w>=1.1",
+    "structlog>=24.4",
+    "diskcache>=5.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+discord = ["discord.py>=2.4"]
+rust = ["maturin>=1.7"]
+
+[project.scripts]
+gulama = "src.cli.commands:cli"
+
+[project.urls]
+Homepage = "https://gulama.ai"
+Repository = "https://github.com/san-techie21/gulama-bot"
+Documentation = "https://gulama.dev"
+Issues = "https://github.com/san-techie21/gulama-bot/issues"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "S", "B", "A", "C4", "SIM", "TCH"]
+ignore = ["S101"]  # Allow assert in tests
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true

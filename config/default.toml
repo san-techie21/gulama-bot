@@ -1,0 +1,85 @@
+# Gulama Bot — Default Configuration
+# This file contains secure defaults. Modify config.toml in your data directory.
+# SECURITY: All defaults are secure. Insecurity requires explicit opt-in.
+
+[gateway]
+host = "127.0.0.1"          # NEVER 0.0.0.0 without --bind-public --i-know-what-im-doing
+port = 18789
+websocket_origins = ["http://localhost:*", "https://localhost:*"]
+max_connections = 10
+request_timeout_seconds = 60
+
+[auth]
+totp_enabled = true
+session_timeout_seconds = 3600    # 1 hour
+
+[llm]
+# Universal LLM support via LiteLLM (100+ providers)
+# Set provider and model to ANY supported LLM
+provider = "anthropic"
+model = "claude-sonnet-4-5-20250929"
+api_base = ""                     # Custom endpoint URL (optional)
+api_key_name = "LLM_API_KEY"     # Key name in secrets vault
+max_tokens = 4096
+temperature = 0.7
+daily_token_budget = 500000       # ~$2.50/day at Sonnet pricing
+
+[llm.fallback]
+# Fallback provider when primary fails or budget exceeded
+provider = ""
+model = ""
+api_base = ""
+api_key_name = ""
+
+[security]
+sandbox_enabled = true           # Cannot disable without --i-know-what-im-doing
+policy_engine_enabled = true
+canary_tokens_enabled = true
+egress_filtering_enabled = true
+audit_logging_enabled = true
+skill_signature_required = true
+
+[memory]
+encryption_algorithm = "aes-256-gcm"
+vector_store = "chromadb"
+max_context_tokens = 8000        # RAG retrieves relevant chunks, not full history
+summarize_after_messages = 50    # Compress old memories periodically
+
+[autonomy]
+default_level = 2
+# Level 0: Ask before every action (observer)
+# Level 1: Auto-read, ask before writes (assistant)
+# Level 2: Auto-read/write safe, ask before shell/network (co-pilot)
+# Level 3: Auto most things, ask before destructive (autopilot-cautious)
+# Level 4: Auto everything except financial/credential (autopilot)
+# Level 5: Full autonomous (requires --i-know-what-im-doing)
+
+[cost]
+tracking_enabled = true
+daily_budget_usd = 2.50
+alert_threshold_percent = 80     # Alert at 80% of budget
+
+[channels.telegram]
+enabled = false
+bot_token_name = "TELEGRAM_BOT_TOKEN"  # Key name in secrets vault
+allowed_user_ids = []                   # Empty = all users allowed
+
+[channels.discord]
+enabled = false
+bot_token_name = "DISCORD_BOT_TOKEN"
+allowed_guild_ids = []
+
+[channels.whatsapp]
+enabled = false
+
+[channels.web]
+enabled = false
+
+[logging]
+level = "INFO"
+format = "json"
+file_enabled = true
+max_file_size_mb = 50
+max_files = 5
+# CRITICAL: Never log secrets, API keys, or credentials
+redact_secrets = true
