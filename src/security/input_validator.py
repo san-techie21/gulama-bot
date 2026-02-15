@@ -93,17 +93,17 @@ class InputValidator:
         # Remove null bytes
         path = path.replace("\x00", "")
 
-        # Normalize path
-        normalized = os.path.normpath(path)
-
-        # Check for path traversal
-        if ".." in normalized:
+        # Check for path traversal BEFORE normalizing (normpath resolves ".." away)
+        if ".." in path:
             return ValidationResult(
                 valid=False,
                 sanitized="",
                 warnings=[],
                 blocked_reason="Path traversal detected (..)",
             )
+
+        # Normalize path
+        normalized = os.path.normpath(path)
 
         # Check for sensitive paths
         from src.constants import SENSITIVE_PATHS
@@ -215,7 +215,8 @@ class InputValidator:
     def _detect_injection_patterns(text: str) -> list[str]:
         """Detect common prompt injection patterns."""
         patterns = {
-            "instruction_override": r"ignore\s+(previous|above|all)\s+(instructions?|prompts?|rules?)",
+            "instruction_override": r"ignore\s+(all\s+)?(previous|above)\s+(instructions?|prompts?|rules?)",
+            "instruction_override_alt": r"ignore\s+(previous|above|all)\s+(instructions?|prompts?|rules?)",
             "role_hijack": r"you\s+are\s+now\s+",
             "system_injection": r"system\s*:\s*",
             "xml_injection": r"</?(system|prompt|instructions?|context)>",
@@ -224,6 +225,11 @@ class InputValidator:
             "rule_bypass": r"do\s+not\s+follow\s+(the|your)\s+(rules|instructions|guidelines)",
             "prompt_extraction": r"reveal\s+(your|the)\s+(system|initial)\s+prompt",
             "delimiter_injection": r"\[INST\]|\[/INST\]|<<SYS>>|<</SYS>>",
+            "disregard_override": r"disregard\s+(all|previous|safety|your)\s+",
+            "new_instructions": r"(new|###)\s*(instructions?|directive)",
+            "llm_delimiter": r"\|system\|>|<\|im_start\|>",
+            "role_impersonation": r"^(Assistant|Human|System)\s*:\s+",
+            "bracket_system": r"\[(SYSTEM|SYS|ADMIN)\]",
         }
 
         detected = []

@@ -184,6 +184,20 @@ class HardDenyPolicy(Policy):
         r"wget.*\|\s*(bash|sh|sudo)",        # Pipe to shell
     ]
 
+    # SSRF targets — always blocked regardless of autonomy level
+    BLOCKED_NETWORK_TARGETS = [
+        "169.254.169.254",        # AWS metadata
+        "metadata.google.internal",  # GCP metadata
+        "100.100.100.200",        # Azure metadata
+        "localhost",
+        "127.0.0.1",
+        "0.0.0.0",
+        "[::1]",
+    ]
+
+    # System paths — always restricted regardless of autonomy level
+    SYSTEM_PATHS = ["/etc/", "/usr/", "/bin/", "/sbin/", "c:\\windows\\", "c:\\program files"]
+
     def evaluate(self, ctx: PolicyContext) -> PolicyResult | None:
         # Always deny access to sensitive paths
         if ctx.action in (ActionType.FILE_READ, ActionType.FILE_WRITE, ActionType.FILE_DELETE):
@@ -195,6 +209,16 @@ class HardDenyPolicy(Policy):
                         policy_name=self.name,
                     )
 
+            # Block system paths at the hard-deny level (before autonomy can ALLOW)
+            resource_lower = ctx.resource.lower()
+            for sys_path in self.SYSTEM_PATHS:
+                if resource_lower.startswith(sys_path):
+                    return PolicyResult(
+                        decision=Decision.DENY,
+                        reason=f"Access to system path '{sys_path}' is restricted.",
+                        policy_name=self.name,
+                    )
+
         # Always deny dangerous shell commands
         if ctx.action == ActionType.SHELL_EXEC:
             for pattern in self.FORBIDDEN_COMMANDS:
@@ -202,6 +226,17 @@ class HardDenyPolicy(Policy):
                     return PolicyResult(
                         decision=Decision.DENY,
                         reason=f"Dangerous command blocked: matches pattern '{pattern}'",
+                        policy_name=self.name,
+                    )
+
+        # Always block SSRF targets (before autonomy can ALLOW)
+        if ctx.action in (ActionType.NETWORK_REQUEST, ActionType.NETWORK_DOWNLOAD):
+            resource_lower = ctx.resource.lower()
+            for blocked in self.BLOCKED_NETWORK_TARGETS:
+                if blocked in resource_lower:
+                    return PolicyResult(
+                        decision=Decision.DENY,
+                        reason=f"Access to '{blocked}' is blocked (SSRF prevention).",
                         policy_name=self.name,
                     )
 

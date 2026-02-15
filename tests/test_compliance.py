@@ -121,13 +121,17 @@ class TestComplianceReporter:
         assert ComplianceReporter._score_to_grade(65) == "D"
         assert ComplianceReporter._score_to_grade(50) == "F"
 
-    def test_export_report(self, tmp_path):
+    def test_export_report(self):
         """Exporting a report to JSON should work."""
-        report = {"report_type": "test", "data": "hello"}
-        output = tmp_path / "report.json"
-        self.reporter.export_report(report, output)
-        assert output.exists()
         import json
-        with open(output) as f:
-            loaded = json.load(f)
-        assert loaded["report_type"] == "test"
+        import tempfile
+        from pathlib import Path
+
+        report = {"report_type": "test", "data": "hello"}
+        with tempfile.TemporaryDirectory() as td:
+            output = Path(td) / "report.json"
+            self.reporter.export_report(report, output)
+            assert output.exists()
+            with open(output) as f:
+                loaded = json.load(f)
+            assert loaded["report_type"] == "test"

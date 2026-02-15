@@ -156,11 +156,14 @@ def load_config(config_path: Path | None = None) -> GulamaConfig:
             merged = _deep_merge(merged, user_config)
 
     # Build config from merged dict
+    llm_section = dict(merged.get("llm", {}))
+    llm_fallback_section = llm_section.pop("fallback", {})
+
     config = GulamaConfig(
         gateway=GatewayConfig(**merged.get("gateway", {})),
         auth=AuthConfig(**merged.get("auth", {})),
-        llm=LLMConfig(**merged.get("llm", {})),
-        llm_fallback=LLMFallbackConfig(**merged.get("llm", {}).get("fallback", {})),
+        llm=LLMConfig(**llm_section),
+        llm_fallback=LLMFallbackConfig(**llm_fallback_section),
         security=SecurityConfig(**merged.get("security", {})),
         memory=MemoryConfig(**merged.get("memory", {})),
         autonomy=AutonomyConfig(**merged.get("autonomy", {})),

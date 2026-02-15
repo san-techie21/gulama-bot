@@ -287,10 +287,14 @@ class Sandbox:
         dangerous_patterns = [
             r"rm\s+-rf\s+/\s*$",
             r"rm\s+-rf\s+/\*",
-            r":(){ :\|:& };:",
+            r"rm\s+-rf\s+~",
+            r":\(\)\{.*:\|:.*\};:",           # Fork bomb (regex-escaped)
             r">\s*/dev/sd[a-z]",
             r"mkfs\.",
             r"dd\s+if=.*of=/dev/sd",
+            r"chmod\s+(-R\s+)?777\s+/",       # Recursive 777 on root
+            r"curl.*\|\s*(bash|sh|sudo)",      # Pipe to shell
+            r"wget.*\|\s*(bash|sh|sudo)",      # Pipe to shell
         ]
         for pattern in dangerous_patterns:
             if re.search(pattern, command):

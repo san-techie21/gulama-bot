@@ -363,7 +363,7 @@ class RBACManager:
         return hashlib.scrypt(
             password.encode(),
             salt=bytes.fromhex(salt),
-            n=2**17, r=8, p=1, dklen=64,
+            n=2**14, r=8, p=1, dklen=64,
         ).hex()
 
 

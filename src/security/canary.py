@@ -195,16 +195,21 @@ class CanarySystem:
         Returns a list of detected patterns with descriptions.
         """
         patterns = [
-            (r"ignore\s+(previous|above|all)\s+(instructions?|prompts?)", "instruction_override"),
+            (r"ignore\s+(all\s+)?(previous|above)\s+(instructions?|prompts?|rules?)", "instruction_override"),
+            (r"ignore\s+(previous|above|all)\s+(instructions?|prompts?|rules?)", "instruction_override"),
             (r"you\s+are\s+now\s+", "role_hijack"),
             (r"system\s*:\s*", "system_prompt_injection"),
             (r"</?(system|prompt|instructions?)>", "xml_tag_injection"),
-            (r"IMPORTANT.*override", "priority_injection"),
+            (r"(IMPORTANT|CRITICAL|URGENT).*override", "priority_injection"),
             (r"forget\s+(everything|all|previous)", "memory_wipe_attempt"),
-            (r"do\s+not\s+follow\s+(the|your)\s+(rules|instructions)", "rule_bypass"),
+            (r"do\s+not\s+follow\s+(the|your)\s+(rules|instructions|guidelines)", "rule_bypass"),
             (r"reveal\s+(your|the)\s+(system|initial)\s+prompt", "prompt_extraction"),
             (r"\[INST\]|\[/INST\]|<<SYS>>|<</SYS>>", "llm_delimiter_injection"),
             (r"\\n\\nHuman:|\\n\\nAssistant:", "conversation_injection"),
+            (r"disregard\s+(all|previous|safety|your)\s+", "instruction_override"),
+            (r"override\s+(all|previous|safety|your)\s+", "instruction_override"),
+            (r"new\s+instructions?\s*:", "instruction_override"),
+            (r"\|system\|>|<\|im_start\|>", "llm_delimiter_injection"),
         ]
 
         detections = []
