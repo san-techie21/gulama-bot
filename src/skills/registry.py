@@ -70,17 +70,25 @@ class SkillRegistry:
         ]
 
         # Optional skills — load if their modules are importable
-        try:
-            from src.skills.builtin.code_exec import CodeExecSkill
-            builtins.append(CodeExecSkill())
-        except Exception:
-            logger.info("skill_skipped", name="code_exec", reason="module load failed")
+        optional_skills = [
+            ("code_exec", "src.skills.builtin.code_exec", "CodeExecSkill"),
+            ("browser", "src.skills.builtin.browser", "BrowserSkill"),
+            ("email", "src.skills.builtin.email_skill", "EmailSkill"),
+            ("calendar", "src.skills.builtin.calendar_skill", "CalendarSkill"),
+            ("mcp", "src.skills.builtin.mcp_bridge", "MCPBridgeSkill"),
+            ("voice", "src.skills.builtin.voice_skill", "VoiceSkill"),
+            ("image_gen", "src.skills.builtin.image_gen", "ImageGenSkill"),
+            ("smart_home", "src.skills.builtin.smart_home", "SmartHomeSkill"),
+        ]
 
-        try:
-            from src.skills.builtin.browser import BrowserSkill
-            builtins.append(BrowserSkill())
-        except Exception:
-            logger.info("skill_skipped", name="browser", reason="module load failed")
+        for skill_name, module_path, class_name in optional_skills:
+            try:
+                import importlib
+                module = importlib.import_module(module_path)
+                skill_class = getattr(module, class_name)
+                builtins.append(skill_class())
+            except Exception:
+                logger.info("skill_skipped", name=skill_name, reason="module load failed")
 
         for skill in builtins:
             self.register(skill)

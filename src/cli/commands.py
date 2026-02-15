@@ -59,7 +59,7 @@ def cli() -> None:
     help="Required for dangerous operations",
 )
 @click.option("--no-browser", is_flag=True, default=False, help="Don't open browser on start")
-@click.option("--channel", type=click.Choice(["gateway", "telegram", "discord", "cli"]), default="gateway")
+@click.option("--channel", type=click.Choice(["gateway", "telegram", "discord", "slack", "cli"]), default="gateway")
 def start(
     host: str,
     port: int,
@@ -117,6 +117,8 @@ def start(
         _start_telegram()
     elif channel == "discord":
         _start_discord()
+    elif channel == "slack":
+        _start_slack()
 
 
 def _start_gateway(host: str, port: int, no_browser: bool) -> None:
@@ -152,7 +154,47 @@ def _start_telegram() -> None:
 
 def _start_discord() -> None:
     """Start the Discord bot channel."""
-    console.print("[yellow]Discord channel coming soon.[/]")
+    import os
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
+    token = os.getenv("DISCORD_BOT_TOKEN", "")
+    if not token:
+        console.print(
+            "[red]DISCORD_BOT_TOKEN not set.[/]\n"
+            "Set it in .env or run: gulama vault set DISCORD_BOT_TOKEN"
+        )
+        return
+
+    allowed_users = os.getenv("DISCORD_ALLOWED_USERS", "")
+    allowed_list = [u.strip() for u in allowed_users.split(",") if u.strip()] if allowed_users else None
+
+    from src.channels.discord_adapter import DiscordChannel
+    from src.agent.brain import AgentBrain
+    from src.gateway.config import load_config
+
+    config = load_config()
+    brain = AgentBrain(config=config)
+
+    channel = DiscordChannel(
+        bot_token=token,
+        allowed_user_ids=allowed_list,
+    )
+    channel.set_agent(brain)
+
+    console.print("[green]Starting Discord bot...[/]")
+    channel.run()
+
+
+def _start_slack() -> None:
+    """Start the Slack bot via gateway with webhook endpoints."""
+    console.print(
+        "[yellow]Slack uses webhooks — start with 'gulama start' (gateway mode) "
+        "and configure Slack to point to your webhook URLs.[/]"
+    )
 
 
 # ──────────────────────── gulama stop ────────────────────────

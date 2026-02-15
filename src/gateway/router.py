@@ -169,3 +169,219 @@ async def get_cost_history(request: Request, days: int = 7) -> dict:
     store.close()
 
     return {"days": days, "history": history}
+
+
+# ──────────────────────── Skills ────────────────────────
+
+
+@api_router.get("/skills")
+async def list_skills(request: Request) -> dict:
+    """List all registered skills and their metadata."""
+    from src.agent.brain import AgentBrain
+
+    config = request.app.state.config
+    brain = AgentBrain(config=config)
+    skills = brain.skill_registry.list_skills()
+
+    return {
+        "count": len(skills),
+        "skills": [
+            {
+                "name": s.name,
+                "description": s.description,
+                "version": s.version,
+                "author": s.author,
+                "builtin": s.is_builtin,
+            }
+            for s in skills
+        ],
+    }
+
+
+# ──────────────────────── Scheduler ────────────────────────
+
+
+class ScheduleTaskRequest(BaseModel):
+    name: str
+    schedule_type: str  # "cron", "interval", "once"
+    schedule_value: str
+    action_type: str  # "message", "skill", "summarize", "heartbeat"
+    action_config: dict | None = None
+
+
+@api_router.get("/scheduler/tasks")
+async def list_scheduled_tasks(request: Request) -> dict:
+    """List all scheduled tasks."""
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if not scheduler:
+        return {"tasks": [], "error": "Scheduler not initialized"}
+    return {"tasks": scheduler.list_tasks()}
+
+
+@api_router.post("/scheduler/tasks")
+async def create_scheduled_task(request: Request, body: ScheduleTaskRequest) -> dict:
+    """Create a new scheduled task."""
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if not scheduler:
+        raise HTTPException(status_code=503, detail="Scheduler not initialized")
+
+    task_id = scheduler.add_task(
+        name=body.name,
+        schedule_type=body.schedule_type,
+        schedule_value=body.schedule_value,
+        action_type=body.action_type,
+        action_config=body.action_config or {},
+    )
+    return {"task_id": task_id, "status": "created"}
+
+
+@api_router.delete("/scheduler/tasks/{task_id}")
+async def delete_scheduled_task(request: Request, task_id: str) -> dict:
+    """Delete a scheduled task."""
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if not scheduler:
+        raise HTTPException(status_code=503, detail="Scheduler not initialized")
+
+    if scheduler.remove_task(task_id):
+        return {"status": "deleted"}
+    raise HTTPException(status_code=404, detail="Task not found")
+
+
+# ──────────────────────── Sub-Agents ────────────────────────
+
+
+class SpawnAgentRequest(BaseModel):
+    message: str
+    channel: str = "api"
+
+
+@api_router.get("/agents")
+async def list_sub_agents(request: Request) -> dict:
+    """List all sub-agents and their status."""
+    mgr = getattr(request.app.state, "sub_agent_manager", None)
+    if not mgr:
+        return {"agents": [], "active_count": 0}
+    return {
+        "agents": mgr.list_agents(),
+        "active_count": mgr.active_count,
+    }
+
+
+@api_router.post("/agents/spawn")
+async def spawn_sub_agent(request: Request, body: SpawnAgentRequest) -> dict:
+    """Spawn a new background sub-agent."""
+    mgr = getattr(request.app.state, "sub_agent_manager", None)
+    if not mgr:
+        raise HTTPException(status_code=503, detail="Sub-agent manager not initialized")
+
+    try:
+        agent_id = await mgr.spawn(
+            message=body.message,
+            channel=body.channel,
+        )
+        return {"agent_id": agent_id, "status": "spawned"}
+    except RuntimeError as e:
+        raise HTTPException(status_code=429, detail=str(e))
+
+
+@api_router.get("/agents/{agent_id}")
+async def get_sub_agent(request: Request, agent_id: str) -> dict:
+    """Get a sub-agent's status and result."""
+    mgr = getattr(request.app.state, "sub_agent_manager", None)
+    if not mgr:
+        raise HTTPException(status_code=503, detail="Sub-agent manager not initialized")
+
+    result = mgr.get_result(agent_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    return {
+        "id": result.agent_id,
+        "status": result.status.value,
+        "output": result.output,
+        "error": result.error,
+        "tools_used": result.tools_used,
+        "tokens_used": result.tokens_used,
+        "cost_usd": result.cost_usd,
+        "started_at": str(result.started_at) if result.started_at else None,
+        "completed_at": str(result.completed_at) if result.completed_at else None,
+    }
+
+
+@api_router.post("/agents/{agent_id}/cancel")
+async def cancel_sub_agent(request: Request, agent_id: str) -> dict:
+    """Cancel a running sub-agent."""
+    mgr = getattr(request.app.state, "sub_agent_manager", None)
+    if not mgr:
+        raise HTTPException(status_code=503, detail="Sub-agent manager not initialized")
+
+    if await mgr.cancel(agent_id):
+        return {"status": "cancelled"}
+    raise HTTPException(status_code=404, detail="Agent not found or not running")
+
+
+# ──────────────────────── Conversations ────────────────────────
+
+
+@api_router.get("/conversations")
+async def list_conversations(request: Request, limit: int = 20) -> dict:
+    """List recent conversations."""
+    from src.memory.store import MemoryStore
+
+    store = MemoryStore()
+    store.open()
+    try:
+        rows = store.conn.execute(
+            "SELECT id, channel, user_id, started_at, ended_at, summary "
+            "FROM conversations ORDER BY started_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return {"conversations": [dict(r) for r in rows]}
+    except Exception:
+        return {"conversations": []}
+    finally:
+        store.close()
+
+
+@api_router.get("/conversations/{conversation_id}")
+async def get_conversation(request: Request, conversation_id: str) -> dict:
+    """Get messages in a conversation."""
+    from src.memory.store import MemoryStore
+
+    store = MemoryStore()
+    store.open()
+    try:
+        messages = store.get_messages(conversation_id)
+        return {"conversation_id": conversation_id, "messages": messages}
+    finally:
+        store.close()
+
+
+# ──────────────────────── Audit Log ────────────────────────
+
+
+@api_router.get("/audit")
+async def get_audit_log(request: Request, limit: int = 50) -> dict:
+    """Get recent audit log entries."""
+    from src.security.audit_logger import AuditLogger
+
+    audit = AuditLogger()
+    entries = audit.read_entries()  # Reads today's entries
+    # Return the last N entries
+    recent = entries[-limit:] if len(entries) > limit else entries
+    return {
+        "entries": [
+            {
+                "timestamp": e.timestamp,
+                "action": e.action,
+                "actor": e.actor,
+                "resource": e.resource[:200],
+                "decision": e.decision,
+                "policy": e.policy,
+                "detail": e.detail[:200],
+                "channel": e.channel,
+            }
+            for e in reversed(recent)
+        ],
+        "count": len(recent),
+    }

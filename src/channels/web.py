@@ -117,7 +117,7 @@ class WebChannel(BaseChannel):
                 result = await self._agent_brain.process_message(
                     message, channel="web"
                 )
-                response = result.get("text", "No response.")
+                response = result.get("response", "No response.")
                 await send_fn(json.dumps({
                     "type": "done",
                     "content": response,

@@ -201,7 +201,7 @@ class SlackChannel(BaseChannel):
                 result = await self._agent_brain.process_message(
                     content, channel="slack"
                 )
-                return result.get("text", "No response.")
+                return result.get("response", "No response.")
             return "Bot is not configured."
         except Exception as e:
             logger.error("slack_response_failed", error=str(e))

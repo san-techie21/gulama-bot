@@ -172,7 +172,7 @@ class WhatsAppChannel(BaseChannel):
                 result = await self._agent_brain.process_message(
                     content, channel="whatsapp"
                 )
-                return result.get("text", "No response.")
+                return result.get("response", "No response.")
             return "Bot is not configured."
         except Exception as e:
             logger.error("whatsapp_response_failed", error=str(e))

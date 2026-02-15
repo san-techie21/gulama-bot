@@ -73,9 +73,51 @@ def create_app() -> FastAPI:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         pid_file.write_text(str(os.getpid()))
 
+        # Initialize sub-agent manager and scheduler
+        try:
+            from src.agent.sub_agents import SubAgentManager, create_scheduler_handlers
+            from src.channels.scheduler import TaskScheduler
+
+            sub_agent_mgr = SubAgentManager(max_concurrent=5)
+            scheduler = TaskScheduler()
+
+            # Wire scheduler handlers
+            handlers = create_scheduler_handlers(sub_agent_mgr)
+            for action_type, handler in handlers.items():
+                scheduler.register_handler(action_type, handler)
+
+            # Add default scheduled tasks
+            scheduler.add_heartbeat(interval_seconds=300)
+            scheduler.add_memory_cleanup(interval_hours=24)
+
+            # Store in app state for route access
+            app.state.sub_agent_manager = sub_agent_mgr
+            app.state.scheduler = scheduler
+
+            # Start scheduler loop
+            await scheduler.start()
+            logger.info("scheduler_and_subagents_ready")
+        except Exception as e:
+            logger.warning("scheduler_init_failed", error=str(e))
+
     @app.on_event("shutdown")
     async def on_shutdown() -> None:
         logger.info("gateway_stopped")
+
+        # Stop scheduler
+        if hasattr(app.state, "scheduler"):
+            try:
+                await app.state.scheduler.stop()
+            except Exception:
+                pass
+
+        # Cancel sub-agents
+        if hasattr(app.state, "sub_agent_manager"):
+            try:
+                await app.state.sub_agent_manager.cancel_all()
+            except Exception:
+                pass
+
         from src.constants import DATA_DIR
         pid_file = DATA_DIR / "gulama.pid"
         pid_file.unlink(missing_ok=True)

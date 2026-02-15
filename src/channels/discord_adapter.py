@@ -197,7 +197,7 @@ class DiscordChannel(BaseChannel):
                 response = await self._agent_brain.process_message(
                     content, channel="discord"
                 )
-                return response.get("text", "No response generated.")
+                return response.get("response", "No response generated.")
             else:
                 return "Bot is not fully configured. No agent brain available."
         except Exception as e:
