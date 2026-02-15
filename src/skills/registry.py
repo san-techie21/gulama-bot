@@ -62,12 +62,25 @@ class SkillRegistry:
         from src.skills.builtin.shell_exec import ShellExecSkill
         from src.skills.builtin.web_search import WebSearchSkill
 
-        builtins = [
+        builtins: list[BaseSkill] = [
             FileManagerSkill(),
             ShellExecSkill(),
             WebSearchSkill(),
             NotesSkill(),
         ]
+
+        # Optional skills — load if their modules are importable
+        try:
+            from src.skills.builtin.code_exec import CodeExecSkill
+            builtins.append(CodeExecSkill())
+        except Exception:
+            logger.info("skill_skipped", name="code_exec", reason="module load failed")
+
+        try:
+            from src.skills.builtin.browser import BrowserSkill
+            builtins.append(BrowserSkill())
+        except Exception:
+            logger.info("skill_skipped", name="browser", reason="module load failed")
 
         for skill in builtins:
             self.register(skill)

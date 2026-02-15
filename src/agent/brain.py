@@ -1,38 +1,52 @@
 """
 Agent brain for Gulama — the central reasoning engine.
 
+Phase 1 — Full agentic tool execution with security pipeline.
+
 The brain:
 1. Receives user messages from any channel
 2. Builds context via RAG (not full history dump)
 3. Routes to the appropriate LLM via the universal router
-4. Processes tool calls through the security sandbox
-5. Tracks tokens/cost and stores in memory
-6. Returns responses (sync or streaming)
-
-This is a simple brain for Phase 0 — no tool execution yet.
-Tool execution and policy engine integration come in Phase 1.
+4. Runs an agentic tool-calling loop (LLM -> tools -> LLM -> ...)
+5. All tool calls go through the 8-step security pipeline
+6. Tracks tokens/cost and stores in memory
+7. Returns responses (sync or streaming)
 """
 
 from __future__ import annotations
 
+import json
 from typing import Any, AsyncIterator
 
 from src.agent.context_builder import ContextBuilder
 from src.agent.llm_router import LLMRouter
+from src.agent.tool_executor import ToolExecutor
 from src.gateway.config import GulamaConfig
 from src.memory.store import MemoryStore
+from src.security.audit_logger import AuditLogger
+from src.security.canary import CanarySystem
+from src.security.egress_filter import EgressFilter
+from src.security.policy_engine import PolicyEngine
+from src.skills.registry import SkillRegistry
 from src.utils.logging import get_logger
 
 logger = get_logger("brain")
+
+# Safety limit: maximum rounds of LLM -> tool -> LLM before forcing text response
+MAX_TOOL_ROUNDS = 10
 
 
 class AgentBrain:
     """
     Central reasoning engine for Gulama.
 
-    Phase 0: Simple chat (no tools)
-    Phase 1: + tool execution via sandbox + policy engine
-    Phase 2: + RAG with vector search + autonomy enforcement
+    Runs a full agentic loop:
+    1. LLM receives user message + tool definitions
+    2. LLM either responds with text OR requests tool calls
+    3. Tool calls execute through the security pipeline
+    4. Tool results are injected back into conversation
+    5. LLM receives updated conversation and may call more tools
+    6. Loop until LLM responds with text (or MAX_TOOL_ROUNDS hit)
     """
 
     def __init__(self, config: GulamaConfig, api_key: str = ""):
@@ -40,6 +54,10 @@ class AgentBrain:
         self.context_builder = ContextBuilder(config=config)
         self._api_key = api_key
         self._router: LLMRouter | None = None
+        self._tool_executor: ToolExecutor | None = None
+        self._skill_registry: SkillRegistry | None = None
+
+    # ── Lazy-initialized components ────────────────────────────
 
     @property
     def router(self) -> LLMRouter:
@@ -50,6 +68,36 @@ class AgentBrain:
             self._router = LLMRouter(config=self.config, api_key=api_key)
         return self._router
 
+    @property
+    def skill_registry(self) -> SkillRegistry:
+        """Lazy-init skill registry and load built-in skills."""
+        if self._skill_registry is None:
+            self._skill_registry = SkillRegistry()
+            self._skill_registry.load_builtins()
+            logger.info(
+                "skills_loaded",
+                count=self._skill_registry.count,
+                skills=[s.name for s in self._skill_registry.list_skills()],
+            )
+        return self._skill_registry
+
+    @property
+    def tool_executor(self) -> ToolExecutor:
+        """Lazy-init tool executor with full security pipeline."""
+        if self._tool_executor is None:
+            autonomy = self.config.autonomy.default_level
+            self._tool_executor = ToolExecutor(
+                registry=self.skill_registry,
+                policy_engine=PolicyEngine(autonomy_level=autonomy),
+                audit_logger=AuditLogger(),
+                canary_system=CanarySystem(),
+                egress_filter=EgressFilter(),
+            )
+            logger.info("tool_executor_initialized", autonomy_level=autonomy)
+        return self._tool_executor
+
+    # ── Main message processing (agentic loop) ────────────────
+
     async def process_message(
         self,
         message: str,
@@ -58,7 +106,11 @@ class AgentBrain:
         user_id: str | None = None,
     ) -> dict[str, Any]:
         """
-        Process a user message and return the agent's response.
+        Process a user message through the full agentic loop.
+
+        The LLM may request tool calls, which are executed through the
+        security pipeline, and results fed back to the LLM until it
+        produces a final text response.
 
         Returns:
             {
@@ -66,10 +118,16 @@ class AgentBrain:
                 "conversation_id": str,
                 "tokens_used": int,
                 "cost_usd": float,
+                "tools_used": list[str],
             }
         """
         store = MemoryStore()
         store.open()
+
+        tools_used: list[str] = []
+        total_input_tokens = 0
+        total_output_tokens = 0
+        total_cost = 0.0
 
         try:
             # Create or continue conversation
@@ -94,38 +152,141 @@ class AgentBrain:
                     "conversation_id": conversation_id,
                     "tokens_used": 0,
                     "cost_usd": 0.0,
+                    "tools_used": [],
                 }
 
-            # Build context
+            # Build context messages (system prompt + conversation history + RAG)
             messages = self.context_builder.build_messages(
                 user_message=message,
                 conversation_id=conversation_id,
                 channel=channel,
             )
 
-            # Call LLM
-            result = await self.router.chat(messages=messages)
+            # Get tool definitions for function calling
+            tool_definitions = self.skill_registry.get_tool_definitions()
 
-            response_text = result["content"]
-            input_tokens = result["input_tokens"]
-            output_tokens = result["output_tokens"]
-            cost_usd = result["cost_usd"]
+            # ── AGENTIC LOOP ──────────────────────────────────
+            response_text = ""
+
+            for round_num in range(MAX_TOOL_ROUNDS):
+                logger.info(
+                    "agentic_round",
+                    round=round_num + 1,
+                    max_rounds=MAX_TOOL_ROUNDS,
+                    tools_used_so_far=tools_used,
+                )
+
+                # On the last round, don't offer tools (force text response)
+                tools_param = tool_definitions if round_num < MAX_TOOL_ROUNDS - 1 else None
+
+                # Call LLM
+                result = await self.router.chat(
+                    messages=messages,
+                    tools=tools_param,
+                )
+
+                # Track usage
+                total_input_tokens += result.get("input_tokens", 0)
+                total_output_tokens += result.get("output_tokens", 0)
+                total_cost += result.get("cost_usd", 0.0)
+
+                tool_calls = result.get("tool_calls")
+                content = result.get("content", "")
+
+                # If no tool calls, we have our final text response
+                if not tool_calls:
+                    response_text = content or "(No response)"
+                    break
+
+                # ── Execute tool calls ────────────────────────
+                # Add assistant message with tool calls to conversation
+                assistant_msg: dict[str, Any] = {
+                    "role": "assistant",
+                    "content": content or None,
+                    "tool_calls": tool_calls,
+                }
+                messages.append(assistant_msg)
+
+                for tool_call in tool_calls:
+                    func = tool_call["function"]
+                    tool_name = func["name"]
+                    tool_call_id = tool_call["id"]
+
+                    # Parse arguments
+                    try:
+                        arguments = json.loads(func["arguments"]) if isinstance(func["arguments"], str) else func["arguments"]
+                    except (json.JSONDecodeError, TypeError):
+                        arguments = {}
+
+                    logger.info(
+                        "executing_tool",
+                        tool=tool_name,
+                        args=list(arguments.keys()),
+                        round=round_num + 1,
+                    )
+
+                    # Execute through full security pipeline
+                    exec_result = await self.tool_executor.execute_tool_call(
+                        tool_name=tool_name,
+                        arguments=arguments,
+                        channel=channel,
+                        user_id=user_id,
+                    )
+
+                    tools_used.append(tool_name)
+
+                    # Build tool result message
+                    if exec_result["success"]:
+                        tool_output = exec_result["output"] or "(Success, no output)"
+                    else:
+                        decision = exec_result.get("decision", "error")
+                        error = exec_result.get("error", "Unknown error")
+                        if decision == "deny":
+                            tool_output = f"[DENIED] {error}"
+                        elif decision == "ask_user":
+                            tool_output = f"[REQUIRES APPROVAL] {error}"
+                        else:
+                            tool_output = f"[ERROR] {error}"
+
+                    # Inject tool result back into conversation
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "content": tool_output,
+                    })
+
+                    logger.info(
+                        "tool_result",
+                        tool=tool_name,
+                        success=exec_result["success"],
+                        output_len=len(tool_output),
+                    )
+            else:
+                # MAX_TOOL_ROUNDS exhausted without a text response
+                response_text = (
+                    "I've used multiple tools to work on your request. "
+                    "Here's what I did:\n"
+                    + "\n".join(f"- Used {t}" for t in tools_used)
+                    + "\n\nPlease let me know if you need anything else."
+                )
+
+            # ── Store results ─────────────────────────────────
 
             # Store assistant response
             store.add_message(
                 conversation_id,
                 role="assistant",
                 content=response_text,
-                token_count=output_tokens,
+                token_count=total_output_tokens,
             )
 
             # Record cost
             store.record_cost(
                 provider=result.get("provider", self.config.llm.provider),
                 model=result.get("model", self.config.llm.model),
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                cost_usd=cost_usd,
+                input_tokens=total_input_tokens,
+                output_tokens=total_output_tokens,
+                cost_usd=total_cost,
                 channel=channel,
                 conversation_id=conversation_id,
             )
@@ -133,16 +294,19 @@ class AgentBrain:
             logger.info(
                 "message_processed",
                 conversation_id=conversation_id[:12],
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                cost_usd=round(cost_usd, 6),
+                input_tokens=total_input_tokens,
+                output_tokens=total_output_tokens,
+                cost_usd=round(total_cost, 6),
+                tools_used=tools_used,
+                rounds=round_num + 1,
             )
 
             return {
                 "response": response_text,
                 "conversation_id": conversation_id,
-                "tokens_used": input_tokens + output_tokens,
-                "cost_usd": cost_usd,
+                "tokens_used": total_input_tokens + total_output_tokens,
+                "cost_usd": total_cost,
+                "tools_used": tools_used,
             }
 
         except Exception as e:
@@ -152,9 +316,12 @@ class AgentBrain:
                 "conversation_id": conversation_id or "",
                 "tokens_used": 0,
                 "cost_usd": 0.0,
+                "tools_used": tools_used,
             }
         finally:
             store.close()
+
+    # ── Streaming with tool use ───────────────────────────────
 
     async def stream_message(
         self,
@@ -164,14 +331,21 @@ class AgentBrain:
         user_id: str | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """
-        Stream a response from the agent.
+        Stream a response from the agent with tool-use support.
 
         Yields:
             {"type": "chunk", "content": "partial text..."}
+            {"type": "tool_use", "tool": "web_search", "status": "executing"}
+            {"type": "tool_result", "tool": "web_search", "success": true}
             {"type": "complete", "content": "full text", "conversation_id": ..., ...}
         """
         store = MemoryStore()
         store.open()
+
+        tools_used: list[str] = []
+        total_input_tokens = 0
+        total_output_tokens = 0
+        total_cost = 0.0
 
         try:
             if not conversation_id:
@@ -188,6 +362,7 @@ class AgentBrain:
                     "conversation_id": conversation_id,
                     "tokens_used": 0,
                     "cost_usd": 0.0,
+                    "tools_used": [],
                 }
                 return
 
@@ -197,45 +372,130 @@ class AgentBrain:
                 channel=channel,
             )
 
-            full_content = ""
-            async for chunk in self.router.stream(messages=messages):
-                if chunk["type"] == "chunk":
-                    yield chunk
-                elif chunk["type"] == "complete":
-                    full_content = chunk["content"]
+            tool_definitions = self.skill_registry.get_tool_definitions()
+            response_text = ""
 
-                    store.add_message(
-                        conversation_id,
-                        role="assistant",
-                        content=full_content,
-                        token_count=chunk.get("output_tokens", 0),
-                    )
+            for round_num in range(MAX_TOOL_ROUNDS):
+                tools_param = tool_definitions if round_num < MAX_TOOL_ROUNDS - 1 else None
 
-                    store.record_cost(
-                        provider=self.config.llm.provider,
-                        model=chunk.get("model", self.config.llm.model),
-                        input_tokens=chunk.get("input_tokens", 0),
-                        output_tokens=chunk.get("output_tokens", 0),
-                        cost_usd=chunk.get("cost_usd", 0.0),
+                # For the first round (or after tools), try streaming
+                if round_num == 0 and not tools_param:
+                    # No tools available, pure streaming
+                    async for chunk in self.router.stream(messages=messages):
+                        if chunk["type"] == "chunk":
+                            yield chunk
+                        elif chunk["type"] == "complete":
+                            response_text = chunk["content"]
+                            total_input_tokens += chunk.get("input_tokens", 0)
+                            total_output_tokens += chunk.get("output_tokens", 0)
+                            total_cost += chunk.get("cost_usd", 0.0)
+                    break
+
+                # Non-streaming call (tool rounds)
+                result = await self.router.chat(
+                    messages=messages,
+                    tools=tools_param,
+                )
+
+                total_input_tokens += result.get("input_tokens", 0)
+                total_output_tokens += result.get("output_tokens", 0)
+                total_cost += result.get("cost_usd", 0.0)
+
+                tool_calls = result.get("tool_calls")
+                content = result.get("content", "")
+
+                if not tool_calls:
+                    response_text = content or "(No response)"
+                    # Stream the final text response
+                    yield {"type": "chunk", "content": response_text}
+                    break
+
+                # Execute tools
+                assistant_msg: dict[str, Any] = {
+                    "role": "assistant",
+                    "content": content or None,
+                    "tool_calls": tool_calls,
+                }
+                messages.append(assistant_msg)
+
+                for tool_call in tool_calls:
+                    func = tool_call["function"]
+                    tool_name = func["name"]
+                    tool_call_id = tool_call["id"]
+
+                    try:
+                        arguments = json.loads(func["arguments"]) if isinstance(func["arguments"], str) else func["arguments"]
+                    except (json.JSONDecodeError, TypeError):
+                        arguments = {}
+
+                    # Notify client that we're using a tool
+                    yield {
+                        "type": "tool_use",
+                        "tool": tool_name,
+                        "status": "executing",
+                        "arguments": arguments,
+                    }
+
+                    exec_result = await self.tool_executor.execute_tool_call(
+                        tool_name=tool_name,
+                        arguments=arguments,
                         channel=channel,
-                        conversation_id=conversation_id,
+                        user_id=user_id,
                     )
+                    tools_used.append(tool_name)
 
                     yield {
-                        "type": "complete",
-                        "content": full_content,
-                        "conversation_id": conversation_id,
-                        "tokens_used": chunk.get("input_tokens", 0) + chunk.get("output_tokens", 0),
-                        "cost_usd": chunk.get("cost_usd", 0.0),
+                        "type": "tool_result",
+                        "tool": tool_name,
+                        "success": exec_result["success"],
                     }
-                elif chunk["type"] == "error":
-                    yield chunk
+
+                    if exec_result["success"]:
+                        tool_output = exec_result["output"] or "(Success, no output)"
+                    else:
+                        tool_output = f"[ERROR] {exec_result.get('error', 'Unknown error')}"
+
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "content": tool_output,
+                    })
+
+            # Store and finalize
+            if response_text:
+                store.add_message(
+                    conversation_id,
+                    role="assistant",
+                    content=response_text,
+                    token_count=total_output_tokens,
+                )
+
+                store.record_cost(
+                    provider=self.config.llm.provider,
+                    model=self.config.llm.model,
+                    input_tokens=total_input_tokens,
+                    output_tokens=total_output_tokens,
+                    cost_usd=total_cost,
+                    channel=channel,
+                    conversation_id=conversation_id,
+                )
+
+            yield {
+                "type": "complete",
+                "content": response_text,
+                "conversation_id": conversation_id,
+                "tokens_used": total_input_tokens + total_output_tokens,
+                "cost_usd": total_cost,
+                "tools_used": tools_used,
+            }
 
         except Exception as e:
             logger.error("stream_error", error=str(e))
             yield {"type": "error", "content": str(e)}
         finally:
             store.close()
+
+    # ── Provider auto-detection ───────────────────────────────
 
     def _auto_detect_provider(self, api_key: str) -> None:
         """Auto-detect and override provider/model based on available API keys.
@@ -246,12 +506,17 @@ class AgentBrain:
         """
         import os
 
-        # Map of env var → (provider, default_model)
+        # Map of env var -> (provider, default_model)
         provider_map = {
             "DEEPSEEK_API_KEY": ("deepseek", "deepseek-chat"),
             "GROQ_API_KEY": ("groq", "llama-3.3-70b-versatile"),
             "OPENAI_API_KEY": ("openai", "gpt-4o-mini"),
             "ANTHROPIC_API_KEY": ("anthropic", "claude-sonnet-4-5-20250929"),
+            "XAI_API_KEY": ("xai", "grok-2"),
+            "MISTRAL_API_KEY": ("mistral", "mistral-large-latest"),
+            "MOONSHOT_API_KEY": ("moonshot", "moonshot-v1-8k"),
+            "COHERE_API_KEY": ("cohere", "command-r-plus"),
+            "GOOGLE_API_KEY": ("google", "gemini-2.0-flash"),
         }
 
         # Check if the currently configured provider has a valid key
@@ -306,6 +571,11 @@ class AgentBrain:
             or os.getenv("OPENAI_API_KEY")
             or os.getenv("GROQ_API_KEY")
             or os.getenv("ANTHROPIC_API_KEY")
+            or os.getenv("XAI_API_KEY")
+            or os.getenv("MISTRAL_API_KEY")
+            or os.getenv("MOONSHOT_API_KEY")
+            or os.getenv("COHERE_API_KEY")
+            or os.getenv("GOOGLE_API_KEY")
         )
         if env_key:
             logger.info("api_key_loaded", source="environment")
