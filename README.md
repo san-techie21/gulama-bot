@@ -34,7 +34,7 @@
   <img src="media/Gulama.png" alt="Gulama" width="300"/>
 </p>
 
-https://github.com/san-techie21/gulama-bot/releases/download/media-assets/Gulama_Bot_AI_Video.mp4
+https://github.com/user-attachments/assets/62e4d1b3-ed0c-4302-9fb9-f4cecf201833
 
 ---
 
