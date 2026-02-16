@@ -31,11 +31,9 @@
 ---
 
 <p align="center">
-  <a href="https://youtube.com/shorts/LH_ciA_5A50">
-    <img src="https://img.youtube.com/vi/LH_ciA_5A50/maxresdefault.jpg" alt="Watch Gulama AI Video" width="480"/>
-  </a>
-  <br/>
-  <a href="https://youtube.com/shorts/LH_ciA_5A50"><strong>▶ Watch Gulama in Action</strong></a>
+  <video src="https://github.com/san-techie21/gulama-bot/raw/main/media/Gulama_Bot_AI_Video.mp4" width="400" autoplay loop muted playsinline>
+    Your browser does not support the video tag.
+  </video>
 </p>
 
 ---
@@ -537,5 +535,6 @@ Found a vulnerability? Please report it responsibly via [GitHub Issues](https://
   Built with 15+ years of security industry expertise.<br/><br/>
   <a href="https://github.com/san-techie21/gulama-bot">⭐ Star on GitHub</a> ·
   <a href="https://pypi.org/project/gulama/">📦 PyPI</a> ·
+  <a href="https://www.linkedin.com/in/santechie21">💼 LinkedIn</a> ·
   <a href="CONTRIBUTING.md">🤝 Contribute</a>
 </p>
