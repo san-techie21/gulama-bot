@@ -31,10 +31,10 @@
 ---
 
 <p align="center">
-  <video src="https://github.com/san-techie21/gulama-bot/raw/main/media/Gulama_Bot_AI_Video.mp4" width="400" autoplay loop muted playsinline>
-    Your browser does not support the video tag.
-  </video>
+  <img src="media/Gulama.png" alt="Gulama" width="300"/>
 </p>
+
+https://github.com/san-techie21/gulama-bot/raw/main/media/Gulama_Bot_AI_Video.mp4
 
 ---
 
