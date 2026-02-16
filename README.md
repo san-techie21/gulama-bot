@@ -67,16 +67,47 @@ Personal AI agents handle your files, emails, credentials, and conversations. Mo
 
 ## 🚀 Get Started in 60 Seconds
 
-### Prerequisites
+### Step 1: Install Python
 
-- **Python 3.12+** ([download](https://python.org))
-- An API key from any LLM provider (OpenAI, Anthropic, DeepSeek, etc.) — or use [Ollama](https://ollama.ai) for free local models
+You need Python 3.12 or newer. Check if you already have it:
 
-### Install
+```bash
+python --version
+```
+
+If you see `Python 3.12.x` or higher, you're good — skip to Step 2. Otherwise:
+
+<details>
+<summary><b>How to install Python (click to expand)</b></summary>
+
+**Windows:**
+1. Go to [python.org/downloads](https://www.python.org/downloads/)
+2. Download the latest Python 3.12+ installer
+3. **Important:** Check the box that says **"Add Python to PATH"** before clicking Install
+4. Open a new Command Prompt or PowerShell window after installation
+
+**macOS:**
+```bash
+brew install python@3.12
+```
+Or download from [python.org/downloads](https://www.python.org/downloads/)
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt update && sudo apt install python3.12 python3.12-venv python3-pip
+```
+
+</details>
+
+### Step 2: Install Gulama
+
+Open a terminal (Command Prompt, PowerShell, or Terminal) and run:
 
 ```bash
 pip install gulama
 ```
+
+> **Troubleshooting:** If `pip` is not recognized, try `python -m pip install gulama` instead.
 
 Or install with all optional features (voice, browser automation, image generation):
 
@@ -84,27 +115,48 @@ Or install with all optional features (voice, browser automation, image generati
 pip install gulama[full]
 ```
 
-### First-Time Setup
+### Step 3: Get an API Key
+
+Gulama needs an API key from an LLM provider to work. Here are your options:
+
+| Provider | Cost | How to get a key |
+|----------|------|------------------|
+| **DeepSeek** | ~$0.001/chat (cheapest) | Sign up at [platform.deepseek.com](https://platform.deepseek.com/) → API Keys → Create |
+| **Groq** | Free tier available | Sign up at [console.groq.com](https://console.groq.com/) → API Keys → Create |
+| **OpenAI** | ~$0.01/chat | Sign up at [platform.openai.com](https://platform.openai.com/) → API Keys → Create |
+| **Anthropic** | ~$0.01/chat | Sign up at [console.anthropic.com](https://console.anthropic.com/) → API Keys → Create |
+| **Google** | Free tier available | Sign up at [aistudio.google.com](https://aistudio.google.com/) → Get API Key |
+| **Ollama** | **Free (runs locally)** | Install [Ollama](https://ollama.ai) → `ollama pull llama3.3` → No API key needed |
+
+> **New to AI?** Start with **Groq** (free) or **DeepSeek** (cheapest). You can always switch later.
+
+### Step 4: Run Setup
 
 ```bash
 gulama setup
 ```
 
-The interactive setup wizard walks you through:
+The interactive setup wizard walks you through everything:
 
 1. **Create a master password** — All your credentials are encrypted with AES-256-GCM. This password unlocks them. Choose something strong.
-2. **Pick your LLM provider** — Choose from Anthropic, OpenAI, Google, DeepSeek, Qwen, Groq, Together AI, Ollama, or any OpenAI-compatible endpoint.
-3. **Enter your API key** — Encrypted and stored in the local secrets vault. Never stored in plaintext.
+2. **Pick your LLM provider** — Select from the list (Anthropic, OpenAI, Google, DeepSeek, Groq, Ollama, etc.)
+3. **Paste your API key** — It's encrypted and stored in a local vault. Never stored in plaintext.
 4. **Set your autonomy level** — How much freedom should Gulama have? (Default: Level 2 — Co-pilot)
 5. **Optional: Connect channels** — Set up Telegram, Discord, or other messaging channels.
 
-### Start Chatting
+### Step 5: Start Chatting
 
 ```bash
 gulama chat
 ```
 
 That's it. You now have a secure AI assistant with access to 19 skills.
+
+> **Try these first commands:**
+> - `"What can you do?"` — See all available skills
+> - `"Search the web for latest AI news"` — Test web search
+> - `"Remember that my name is [your name]"` — Test memory
+> - `"Read the file README.md"` — Test file access
 
 ### Other Commands
 
@@ -120,10 +172,19 @@ gulama vault list                # List stored secrets
 gulama version                   # Show version info
 ```
 
-### Docker
+### Docker (alternative)
+
+Don't want to install Python? You can run Gulama in a Docker container instead:
+
+<details>
+<summary><b>What is Docker? (click to expand)</b></summary>
+
+Docker lets you run apps in isolated containers — like lightweight virtual machines. You don't need Python installed on your system. Install Docker from [docker.com/get-docker](https://www.docker.com/get-docker/).
+
+</details>
 
 ```bash
-# Standard deployment
+# Start Gulama in a container
 docker compose up -d
 
 # With Redis (caching) + ChromaDB (vector search)
@@ -184,19 +245,45 @@ Talk to Gulama from wherever you already are:
 
 ### Connecting a Channel
 
-Channels are configured by adding tokens to the secrets vault:
+Each channel just needs a token stored in the encrypted vault. Here's how to set up the most popular ones:
 
-```bash
-# Example: Connect Telegram
-gulama vault set TELEGRAM_BOT_TOKEN "your-bot-token-here"
-gulama start --channel telegram
+<details>
+<summary><b>📱 Telegram (step-by-step)</b></summary>
 
-# Example: Connect Discord
-gulama vault set DISCORD_BOT_TOKEN "your-bot-token-here"
-gulama start --channel discord
-```
+1. Open Telegram and search for **@BotFather**
+2. Send `/newbot` and follow the prompts to name your bot
+3. BotFather gives you a **token** (looks like `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`)
+4. Store it in Gulama:
+   ```bash
+   gulama vault set TELEGRAM_BOT_TOKEN "your-token-here"
+   ```
+5. Start Gulama with Telegram:
+   ```bash
+   gulama start --channel telegram
+   ```
+6. Open your bot in Telegram and send it a message!
 
-See `.env.example` for all supported environment variables and token names.
+</details>
+
+<details>
+<summary><b>🎮 Discord (step-by-step)</b></summary>
+
+1. Go to [discord.com/developers/applications](https://discord.com/developers/applications)
+2. Click **New Application** → give it a name → click **Create**
+3. Go to **Bot** tab → click **Reset Token** → copy the token
+4. Go to **OAuth2 → URL Generator** → check **bot** scope → check **Send Messages** + **Read Messages** → copy the invite URL → open it to add the bot to your server
+5. Store the token in Gulama:
+   ```bash
+   gulama vault set DISCORD_BOT_TOKEN "your-token-here"
+   ```
+6. Start Gulama with Discord:
+   ```bash
+   gulama start --channel discord
+   ```
+
+</details>
+
+> 💡 See `.env.example` for all supported channels and token names.
 
 ---
 
@@ -317,7 +404,7 @@ The agent can also **write its own skills** at runtime via the Self-Modify skill
 
 ## 🎛 Autonomy Levels
 
-Control how much independence Gulama has. Set during `gulama setup` or change anytime in config:
+Think of autonomy levels like a trust dial — from "ask me before touching anything" to "handle it yourself." You pick the level during `gulama setup`, and you can change it anytime:
 
 | Level | Name | What it does | Best for |
 |:-----:|------|-------------|----------|
@@ -512,26 +599,30 @@ The cloud deployment includes auto-TLS via Caddy reverse proxy.
 
 ## 🧑‍💻 Development
 
+Want to contribute or build your own skills? Here's how to set up the development environment:
+
 ```bash
-# Clone the repo
+# 1. Clone the repo
 git clone https://github.com/san-techie21/gulama-bot.git
 cd gulama-bot
 
-# Install in development mode
+# 2. Install in development mode (includes test tools)
 pip install -e ".[dev]"
 
-# Run the test suite (277 tests)
+# 3. Run the test suite (277 tests)
 python -m pytest tests/ -v
 
-# Run security-specific tests
+# 4. Run security-specific tests
 python -m pytest tests/security/ -v
 
-# Lint
+# 5. Lint
 ruff check src/
 
-# Security health check
+# 6. Security health check
 gulama doctor --json-output
 ```
+
+> **First time contributing?** Check out [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines, or open an issue to say hi!
 
 ### Project Structure
 
@@ -559,7 +650,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## 🔐 Security Policy
 
-Found a vulnerability? Please report it responsibly via [GitHub Issues](https://github.com/san-techie21/gulama-bot/issues) with the `security` label.
+Found a bug or security issue? Please report it via [GitHub Issues](https://github.com/san-techie21/gulama-bot/issues) with the `security` label. We take every report seriously and will respond within 48 hours.
 
 ---
 
