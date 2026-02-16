@@ -30,10 +30,6 @@
 
 ---
 
-<p align="center">
-  <img src="media/Gulama.png" alt="Gulama" width="300"/>
-</p>
-
 https://github.com/user-attachments/assets/62e4d1b3-ed0c-4302-9fb9-f4cecf201833
 
 ---
