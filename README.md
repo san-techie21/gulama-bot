@@ -52,6 +52,17 @@ Personal AI agents handle your files, emails, credentials, and conversations. Mo
 - 🏠 **Self-hosted** — Runs on your machine. Your data never leaves your infrastructure
 - 🐧 **Cross-platform** — macOS, Windows, Linux, Docker, ARM (Raspberry Pi)
 
+### Built for the Modern AI Stack
+
+- 🔌 **MCP Server & Client** — Full [Model Context Protocol](https://modelcontextprotocol.io/) support. Connect Gulama to Claude Desktop, Cursor, Windsurf, or any MCP-compatible tool — and expose Gulama's skills as an MCP server for other agents to use
+- 🤖 **Multi-Agent Orchestration** — Spawn background sub-agents for parallel task execution. Each sub-agent gets its own brain, memory, and tools. Real multi-agent, not just parallel tool calls
+- ⏰ **Built-in Task Scheduler** — Native cron scheduling with interval and one-time tasks. Run daily summaries, periodic cleanups, health checks — no external cron system needed
+- 🎤 **Voice Wake Word** — Always-on "Hey Gulama" listening via Picovoice. Detects the wake word, captures speech, processes via STT, responds via TTS — a true voice assistant
+- 🧠 **RAG-Powered Memory** — ChromaDB vector search retrieves only relevant memories (not full conversation dumps). Semantic similarity across messages, facts, and conversations — respects token budgets
+- 🌐 **AI-Powered Browser** — Dual-mode web automation: low-level Playwright control + high-level natural language browsing via browser-use. "Research this topic" just works
+- ✍️ **Self-Modifying Agent** — Gulama writes its own new skills at runtime. Code is security-scanned, sandboxed, and persisted across restarts. The agent evolves with your needs
+- 🔍 **Live Debug Stream** — Real-time WebSocket inspector shows tool calls, policy decisions, token usage, memory operations, and sub-agent activity as they happen
+
 ---
 
 ## 🚀 Get Started in 60 Seconds
@@ -138,7 +149,7 @@ Gulama ships with 19 skills out of the box. Each skill runs in a security sandbo
 | 🖥️ | **Browser** | Navigate websites, take screenshots, AI-assisted browsing | Playwright + browser-use |
 | 📧 | **Email** | Read inbox, compose, and send emails | IMAP / SMTP |
 | 📅 | **Calendar** | Create, view, and manage events and schedules | Google Calendar / CalDAV |
-| 🔌 | **MCP Bridge** | Connect to any Model Context Protocol server | MCP |
+| 🔌 | **MCP Bridge** | Connect to any MCP server or expose Gulama as one | Model Context Protocol |
 | 🎤 | **Voice** | Speech-to-text and text-to-speech | Whisper / Deepgram / ElevenLabs |
 | 🎨 | **Image Gen** | Generate images from text descriptions | DALL-E / Stability AI / Replicate |
 | 🏠 | **Smart Home** | Control lights, switches, and IoT devices | Home Assistant |
@@ -447,19 +458,40 @@ Gulama exposes **29 REST endpoints** and **2 WebSocket channels** via the FastAP
 
 ## 🆚 Gulama vs OpenClaw
 
+### Security
+
 | Feature | Gulama | OpenClaw |
 |---------|--------|----------|
 | Security mechanisms | **15+ built into core** | ~0 (security as afterthought) |
 | Memory encryption | **AES-256-GCM** | None (plaintext) |
 | Skill signing | **Ed25519 mandatory** | None (341 malicious skills found) |
-| LLM providers | **100+** via LiteLLM | ~5 |
-| Policy engine | **Cedar-inspired** | None |
+| Policy engine | **Cedar-inspired deterministic** | None |
 | Sandbox | **bubblewrap/Docker/OS** | Container-only |
 | Audit trail | **Cryptographic hash-chain** | Basic logs |
 | Prompt injection defense | **Canary tokens** | None |
+| Egress filtering + DLP | **Built-in** | None |
+
+### Modern AI Capabilities
+
+| Feature | Gulama | OpenClaw |
+|---------|--------|----------|
+| MCP support | **Full server + client** | None |
+| Multi-agent orchestration | **Background sub-agents** | None |
+| Task scheduler | **Built-in cron + intervals** | None |
+| Voice wake word | **Always-on "Hey Gulama"** | None |
+| RAG memory | **ChromaDB vector search** | Full history dump |
+| AI browser automation | **Playwright + browser-use** | Basic browser |
+| Self-modifying skills | **Runtime authoring (sandboxed)** | No |
+| Live debug stream | **WebSocket real-time inspector** | None |
+
+### Platform
+
+| Feature | Gulama | OpenClaw |
+|---------|--------|----------|
+| LLM providers | **100+** via LiteLLM | ~5 |
+| Communication channels | **10** (CLI to Voice Wake) | CLI-focused |
 | Cost controls | **Per-day budgets + alerts** | None |
-| Self-modifying skills | **Yes (sandboxed + scanned)** | No |
-| Egress filtering | **Built-in DLP** | None |
+| REST API | **29 endpoints + 2 WebSockets** | Limited |
 | License | MIT | MIT |
 
 ---
