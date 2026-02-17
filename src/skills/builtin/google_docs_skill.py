@@ -128,7 +128,14 @@ class GoogleDocsSkill(BaseSkill):
                 return SkillResult(
                     success=False,
                     output="",
-                    error="Google credentials not configured. Set GOOGLE_SERVICE_ACCOUNT_FILE or GOOGLE_API_KEY.",
+                    error=(
+                        "Google Workspace (Docs/Sheets/Drive) is not configured yet. "
+                        "Set GOOGLE_SERVICE_ACCOUNT_FILE (path to service account JSON) "
+                        "or GOOGLE_API_KEY (for read-only access) in your .env file. "
+                        "Create credentials at https://console.cloud.google.com/ "
+                        "(enable Docs, Sheets, and Drive APIs). "
+                        "Or run 'gulama setup' for guided configuration."
+                    ),
                 )
 
         try:

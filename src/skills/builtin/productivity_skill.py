@@ -130,7 +130,15 @@ class ProductivitySkill(BaseSkill):
         token = os.getenv("TRELLO_TOKEN", "")
         if not api_key or not token:
             return SkillResult(
-                success=False, output="", error="TRELLO_API_KEY and TRELLO_TOKEN required."
+                success=False,
+                output="",
+                error=(
+                    "Trello is not configured yet. "
+                    "Set TRELLO_API_KEY and TRELLO_TOKEN in your .env file. "
+                    "Get your API key at https://trello.com/power-ups/admin/ "
+                    "and generate a token from there. "
+                    "Or run 'gulama setup' for guided configuration."
+                ),
             )
 
         import httpx
@@ -193,7 +201,16 @@ class ProductivitySkill(BaseSkill):
     async def _linear(self, action: str = "", **kwargs: Any) -> SkillResult:
         token = os.getenv("LINEAR_API_KEY", "")
         if not token:
-            return SkillResult(success=False, output="", error="LINEAR_API_KEY required.")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Linear is not configured yet. "
+                    "Set LINEAR_API_KEY in your .env file. "
+                    "Generate a personal API key at https://linear.app/settings/api. "
+                    "Or run 'gulama setup' for guided configuration."
+                ),
+            )
 
         import httpx
 
@@ -250,7 +267,13 @@ class ProductivitySkill(BaseSkill):
             return SkillResult(
                 success=False,
                 output="",
-                error="JIRA_BASE_URL, JIRA_EMAIL, and JIRA_API_TOKEN required.",
+                error=(
+                    "Jira is not configured yet. "
+                    "Set JIRA_BASE_URL (e.g., https://yourteam.atlassian.net), "
+                    "JIRA_EMAIL, and JIRA_API_TOKEN in your .env file. "
+                    "Generate an API token at https://id.atlassian.com/manage-profile/security/api-tokens. "
+                    "Or run 'gulama setup' for guided configuration."
+                ),
             )
 
         import httpx
@@ -345,7 +368,16 @@ class ProductivitySkill(BaseSkill):
     async def _todoist(self, action: str = "", **kwargs: Any) -> SkillResult:
         token = os.getenv("TODOIST_API_TOKEN", "")
         if not token:
-            return SkillResult(success=False, output="", error="TODOIST_API_TOKEN required.")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Todoist is not configured yet. "
+                    "Set TODOIST_API_TOKEN in your .env file. "
+                    "Get your API token at https://todoist.com/app/settings/integrations/developer. "
+                    "Or run 'gulama setup' for guided configuration."
+                ),
+            )
 
         import httpx
 

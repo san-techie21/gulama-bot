@@ -76,7 +76,14 @@ class TwitterSkill(BaseSkill):
         token = self._get_bearer()
         if not token:
             return SkillResult(
-                success=False, output="", error="TWITTER_BEARER_TOKEN not configured."
+                success=False,
+                output="",
+                error=(
+                    "Twitter/X is not configured yet. To enable Twitter integration, "
+                    "set TWITTER_BEARER_TOKEN in your .env file. "
+                    "Get one from https://developer.twitter.com/en/portal/dashboard. "
+                    "Run 'gulama setup' for guided configuration."
+                ),
             )
 
         dispatch = {

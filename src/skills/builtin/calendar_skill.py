@@ -241,7 +241,13 @@ class CalendarSkill(BaseSkill):
             return SkillResult(
                 success=False,
                 output="",
-                error="Google Calendar not configured. Set GOOGLE_CALENDAR_ACCESS_TOKEN env var.",
+                error=(
+                    "Google Calendar is not configured yet. "
+                    "Set GOOGLE_CALENDAR_ACCESS_TOKEN in your .env file. "
+                    "To get a token: create a Google Cloud project, enable the Calendar API, "
+                    "and generate OAuth2 credentials at https://console.cloud.google.com/. "
+                    "Or run 'gulama setup' for guided configuration."
+                ),
             )
 
         import httpx
@@ -301,7 +307,14 @@ class CalendarSkill(BaseSkill):
     ) -> SkillResult:
         """Create event via Google Calendar API."""
         if not self._access_token:
-            return SkillResult(success=False, output="", error="Google Calendar not configured.")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Google Calendar is not configured yet. "
+                    "Set GOOGLE_CALENDAR_ACCESS_TOKEN in your .env file or run 'gulama setup'."
+                ),
+            )
 
         import httpx
 
@@ -338,7 +351,14 @@ class CalendarSkill(BaseSkill):
     async def _google_delete_event(self, event_id: str) -> SkillResult:
         """Delete event via Google Calendar API."""
         if not self._access_token:
-            return SkillResult(success=False, output="", error="Google Calendar not configured.")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Google Calendar is not configured yet. "
+                    "Set GOOGLE_CALENDAR_ACCESS_TOKEN in your .env file or run 'gulama setup'."
+                ),
+            )
 
         import httpx
 
@@ -358,7 +378,14 @@ class CalendarSkill(BaseSkill):
     async def _google_search_events(self, query: str, days: int) -> SkillResult:
         """Search events via Google Calendar API."""
         if not self._access_token:
-            return SkillResult(success=False, output="", error="Google Calendar not configured.")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Google Calendar is not configured yet. "
+                    "Set GOOGLE_CALENDAR_ACCESS_TOKEN in your .env file or run 'gulama setup'."
+                ),
+            )
 
         import httpx
 

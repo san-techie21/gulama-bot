@@ -88,7 +88,14 @@ class SpotifySkill(BaseSkill):
         token = self._get_token()
         if not token:
             return SkillResult(
-                success=False, output="", error="SPOTIFY_ACCESS_TOKEN not configured."
+                success=False,
+                output="",
+                error=(
+                    "Spotify is not configured yet. To enable Spotify integration, "
+                    "set the SPOTIFY_ACCESS_TOKEN environment variable in your .env file. "
+                    "You can get a token from https://developer.spotify.com/console/. "
+                    "Run 'gulama setup' for guided configuration."
+                ),
             )
 
         dispatch = {

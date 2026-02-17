@@ -22,6 +22,8 @@ Context budget allocation:
 
 from __future__ import annotations
 
+import os
+
 from src.agent.persona import PersonaManager
 from src.gateway.config import GulamaConfig
 from src.memory.store import MemoryStore
@@ -29,6 +31,51 @@ from src.memory.vector_store import VectorStore
 from src.utils.logging import get_logger
 
 logger = get_logger("context_builder")
+
+# Optional skills that require API keys or external configuration.
+# Format: (skill_name, display_name, required_env_vars, setup_hint)
+OPTIONAL_SKILL_REQUIREMENTS: list[tuple[str, str, list[str], str]] = [
+    ("image_gen", "Image Generation", ["OPENAI_API_KEY"], "Set OPENAI_API_KEY for DALL-E, or STABILITY_API_KEY for Stable Diffusion"),
+    ("spotify", "Spotify", ["SPOTIFY_ACCESS_TOKEN"], "Set SPOTIFY_ACCESS_TOKEN env var"),
+    ("github", "GitHub", ["GITHUB_TOKEN"], "Set GITHUB_TOKEN env var or run 'gulama vault set GITHUB_TOKEN'"),
+    ("email", "Email (Gmail/IMAP)", ["EMAIL_ADDRESS", "EMAIL_PASSWORD"], "Set EMAIL_ADDRESS and EMAIL_PASSWORD env vars"),
+    ("calendar", "Google Calendar", ["GOOGLE_CALENDAR_ACCESS_TOKEN"], "Set GOOGLE_CALENDAR_ACCESS_TOKEN env var"),
+    ("notion", "Notion", ["NOTION_TOKEN"], "Set NOTION_TOKEN env var or run 'gulama vault set NOTION_TOKEN'"),
+    ("twitter", "Twitter/X", ["TWITTER_BEARER_TOKEN"], "Set TWITTER_BEARER_TOKEN env var"),
+    ("smart_home", "Smart Home (Home Assistant)", ["HA_URL", "HA_TOKEN"], "Set HA_URL and HA_TOKEN env vars"),
+    ("voice", "Voice (TTS/STT)", ["OPENAI_API_KEY"], "Set OPENAI_API_KEY for Whisper, or ELEVENLABS_API_KEY for ElevenLabs"),
+    ("google_docs", "Google Docs/Drive", ["GOOGLE_DOCS_ACCESS_TOKEN"], "Set GOOGLE_DOCS_ACCESS_TOKEN env var"),
+    ("productivity", "Productivity (Trello/Linear/Jira/Todoist)", ["TRELLO_API_KEY", "LINEAR_API_KEY", "JIRA_API_TOKEN", "TODOIST_API_TOKEN"], "Set the relevant API token for your service (any one of them)"),
+]
+
+
+def _build_skill_availability_block() -> str:
+    """Build a dynamic block listing which optional features are ready vs need setup."""
+    ready = []
+    needs_setup = []
+
+    for skill_name, display_name, env_vars, hint in OPTIONAL_SKILL_REQUIREMENTS:
+        # Check if ANY of the required env vars are set
+        has_key = any(os.getenv(var) for var in env_vars)
+        if has_key:
+            ready.append(display_name)
+        else:
+            needs_setup.append((display_name, hint))
+
+    parts = []
+
+    if ready:
+        parts.append("Additional features READY to use: " + ", ".join(ready))
+
+    if needs_setup:
+        lines = [
+            "Features that need API key setup (tell the user how to enable these if they ask):"
+        ]
+        for name, hint in needs_setup:
+            lines.append(f"  - {name}: {hint}")
+        parts.append("\n".join(lines))
+
+    return "\n\n".join(parts) if parts else ""
 
 AUTONOMY_DESCRIPTIONS = {
     0: "Observer — I ask before every action",
@@ -153,7 +200,7 @@ class ContextBuilder:
         return messages
 
     def _build_system_prompt(self) -> str:
-        """Build the system prompt from persona + context."""
+        """Build the system prompt from persona + context + skill availability."""
         level = self.config.autonomy.default_level
 
         context = {
@@ -166,17 +213,24 @@ class ContextBuilder:
         # Use persona if available
         if self.persona_manager:
             persona = self.persona_manager.active
-            return persona.build_system_prompt(context)
+            base_prompt = persona.build_system_prompt(context)
+        else:
+            # Fallback to default template
+            base_prompt = DEFAULT_SYSTEM_PROMPT.format(
+                autonomy_level=level,
+                autonomy_desc=AUTONOMY_DESCRIPTIONS.get(level, "unknown"),
+                provider=self.config.llm.provider,
+                model=self.config.llm.model,
+                sandbox=self.config.security.sandbox_enabled,
+                policy_engine=self.config.security.policy_engine_enabled,
+            )
 
-        # Fallback to default template
-        return DEFAULT_SYSTEM_PROMPT.format(
-            autonomy_level=level,
-            autonomy_desc=AUTONOMY_DESCRIPTIONS.get(level, "unknown"),
-            provider=self.config.llm.provider,
-            model=self.config.llm.model,
-            sandbox=self.config.security.sandbox_enabled,
-            policy_engine=self.config.security.policy_engine_enabled,
-        )
+        # Append dynamic skill availability info
+        skill_block = _build_skill_availability_block()
+        if skill_block:
+            base_prompt += "\n\n" + skill_block
+
+        return base_prompt
 
     def _get_rag_context(self, query: str) -> str:
         """Retrieve relevant facts and messages via vector similarity."""

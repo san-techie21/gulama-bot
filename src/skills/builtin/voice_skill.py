@@ -186,7 +186,17 @@ class VoiceSkill(BaseSkill):
         """Transcribe using OpenAI Whisper API."""
         api_key = os.getenv("OPENAI_API_KEY", "")
         if not api_key:
-            return SkillResult(success=False, output="", error="OPENAI_API_KEY not set")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Voice features require an API key. "
+                    "For Whisper/OpenAI TTS: set OPENAI_API_KEY. "
+                    "For ElevenLabs TTS: set ELEVENLABS_API_KEY. "
+                    "For Deepgram STT: set DEEPGRAM_API_KEY. "
+                    "Add the key to your .env file or run 'gulama setup'."
+                ),
+            )
 
         import httpx
 
@@ -217,7 +227,15 @@ class VoiceSkill(BaseSkill):
         """Transcribe using Deepgram API."""
         api_key = os.getenv("DEEPGRAM_API_KEY", "")
         if not api_key:
-            return SkillResult(success=False, output="", error="DEEPGRAM_API_KEY not set")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Deepgram speech-to-text requires DEEPGRAM_API_KEY. "
+                    "Set it in your .env file. Get a key at https://console.deepgram.com/. "
+                    "Alternatively, set VOICE_STT_BACKEND=whisper and use OPENAI_API_KEY."
+                ),
+            )
 
         import httpx
 
@@ -328,7 +346,17 @@ class VoiceSkill(BaseSkill):
         """Text-to-speech using OpenAI."""
         api_key = os.getenv("OPENAI_API_KEY", "")
         if not api_key:
-            return SkillResult(success=False, output="", error="OPENAI_API_KEY not set")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Voice features require an API key. "
+                    "For Whisper/OpenAI TTS: set OPENAI_API_KEY. "
+                    "For ElevenLabs TTS: set ELEVENLABS_API_KEY. "
+                    "For Deepgram STT: set DEEPGRAM_API_KEY. "
+                    "Add the key to your .env file or run 'gulama setup'."
+                ),
+            )
 
         voice = voice_id or "alloy"
 

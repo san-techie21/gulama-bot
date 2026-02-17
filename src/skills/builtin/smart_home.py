@@ -143,7 +143,12 @@ class SmartHomeSkill(BaseSkill):
             return SkillResult(
                 success=False,
                 output="",
-                error="Home Assistant not configured. Set HA_URL and HA_TOKEN env vars.",
+                error=(
+                    "Smart Home (Home Assistant) is not configured yet. "
+                    "Set HA_URL (your Home Assistant URL, e.g., http://homeassistant.local:8123) "
+                    "and HA_TOKEN (long-lived access token) in your .env file. "
+                    "Generate a token in Home Assistant: Profile > Long-Lived Access Tokens."
+                ),
             )
 
         try:

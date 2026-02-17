@@ -186,7 +186,17 @@ class ImageGenSkill(BaseSkill):
         """Generate image using OpenAI DALL-E 3."""
         api_key = os.getenv("OPENAI_API_KEY", "")
         if not api_key:
-            return SkillResult(success=False, output="", error="OPENAI_API_KEY not set")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Image generation requires an API key. "
+                    "For DALL-E: set OPENAI_API_KEY in your .env file. "
+                    "For Stable Diffusion: set STABILITY_API_KEY. "
+                    "For Replicate/Flux: set REPLICATE_API_TOKEN. "
+                    "Run 'gulama setup' for guided configuration."
+                ),
+            )
 
         import httpx
 
@@ -247,7 +257,15 @@ class ImageGenSkill(BaseSkill):
         """Generate image using Stability AI."""
         api_key = os.getenv("STABILITY_API_KEY", "")
         if not api_key:
-            return SkillResult(success=False, output="", error="STABILITY_API_KEY not set")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Stable Diffusion image generation requires STABILITY_API_KEY. "
+                    "Set it in your .env file. Get a key at https://platform.stability.ai/. "
+                    "Alternatively, set IMAGE_GEN_BACKEND=dalle and use OPENAI_API_KEY."
+                ),
+            )
 
         import httpx
 
@@ -305,7 +323,15 @@ class ImageGenSkill(BaseSkill):
         """Generate image using Replicate (Flux, SDXL, etc)."""
         api_key = os.getenv("REPLICATE_API_TOKEN", "")
         if not api_key:
-            return SkillResult(success=False, output="", error="REPLICATE_API_TOKEN not set")
+            return SkillResult(
+                success=False,
+                output="",
+                error=(
+                    "Replicate image generation requires REPLICATE_API_TOKEN. "
+                    "Set it in your .env file. Get a token at https://replicate.com/account/api-tokens. "
+                    "Alternatively, set IMAGE_GEN_BACKEND=dalle and use OPENAI_API_KEY."
+                ),
+            )
 
         import httpx
 
