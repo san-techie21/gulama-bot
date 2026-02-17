@@ -55,6 +55,9 @@ dependencies = [
     # Channels
     "python-telegram-bot>=22.0",
 
+    # Built-in Skills
+    "ddgs>=8.0",
+
     # CLI & Utilities
     "click>=8.1",
     "rich>=13.9",

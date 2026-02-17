@@ -46,11 +46,11 @@ max_context_tokens = 8000        # RAG retrieves relevant chunks, not full histo
 summarize_after_messages = 50    # Compress old memories periodically
 
 [autonomy]
-default_level = 2
+default_level = 3
 # Level 0: Ask before every action (observer)
 # Level 1: Auto-read, ask before writes (assistant)
 # Level 2: Auto-read/write safe, ask before shell/network (co-pilot)
-# Level 3: Auto most things, ask before destructive (autopilot-cautious)
+# Level 3: Auto most things, ask before destructive (autopilot-cautious) ← DEFAULT
 # Level 4: Auto everything except financial/credential (autopilot)
 # Level 5: Full autonomous (requires --i-know-what-im-doing)
 

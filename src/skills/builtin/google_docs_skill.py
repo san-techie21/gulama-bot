@@ -278,10 +278,12 @@ class GoogleDocsSkill(BaseSkill):
         from googleapiclient.discovery import build
 
         service = build("drive", "v3", credentials=creds)
+        # Sanitize query to prevent injection in Drive search query syntax
+        safe_query = query.replace("\\", "\\\\").replace("'", "\\'")
         results = (
             service.files()
             .list(
-                q=f"name contains '{query}'",
+                q=f"name contains '{safe_query}'",
                 pageSize=20,
                 fields="files(id,name,mimeType,modifiedTime)",
             )

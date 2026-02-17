@@ -142,9 +142,11 @@ async def get_today_cost(request: Request) -> dict:
 
     store = MemoryStore()
     store.open()
-    cost = store.get_today_cost()
-    stats = store.get_stats()
-    store.close()
+    try:
+        cost = store.get_today_cost()
+        stats = store.get_stats()
+    finally:
+        store.close()
 
     config = request.app.state.config
     budget = config.cost.daily_budget_usd
@@ -165,8 +167,10 @@ async def get_cost_history(request: Request, days: int = 7) -> dict:
 
     store = MemoryStore()
     store.open()
-    history = store.get_cost_summary(days=days)
-    store.close()
+    try:
+        history = store.get_cost_summary(days=days)
+    finally:
+        store.close()
 
     return {"days": days, "history": history}
 

@@ -229,18 +229,50 @@ class SelfModifierSkill(BaseSkill):
             return SkillResult(success=False, output="", error=f"Test failed: {str(e)[:400]}")
 
     def _security_scan(self, code: str) -> str | None:
-        dangerous = [
-            ("subprocess", "Subprocess execution not allowed"),
-            ("__import__", "Dynamic imports not allowed"),
-            ("eval(", "eval() not allowed"),
-            ("exec(", "exec() not allowed"),
-            ("compile(", "compile() not allowed"),
+        """Scan code for dangerous patterns using AST analysis + string fallback."""
+        import ast
+
+        # First pass: AST-based analysis (cannot be trivially bypassed with string tricks)
+        try:
+            tree = ast.parse(code)
+            for node in ast.walk(tree):
+                # Block dangerous function calls
+                if isinstance(node, ast.Call):
+                    func = node.func
+                    # Direct calls: eval(), exec(), compile(), __import__()
+                    if isinstance(func, ast.Name) and func.id in (
+                        "eval", "exec", "compile", "__import__", "breakpoint",
+                    ):
+                        return f"{func.id}() not allowed"
+                    # Attribute calls: os.system(), subprocess.run(), etc.
+                    if isinstance(func, ast.Attribute) and func.attr in (
+                        "system", "popen", "exec_module", "call", "run", "Popen",
+                    ):
+                        return f".{func.attr}() not allowed"
+
+                # Block dangerous imports
+                if isinstance(node, (ast.Import, ast.ImportFrom)):
+                    blocked_modules = {
+                        "subprocess", "ctypes", "os", "shutil", "signal",
+                        "socket", "multiprocessing", "webbrowser",
+                    }
+                    if isinstance(node, ast.Import):
+                        for alias in node.names:
+                            if alias.name.split(".")[0] in blocked_modules:
+                                return f"Import of '{alias.name}' not allowed"
+                    elif node.module and node.module.split(".")[0] in blocked_modules:
+                        return f"Import from '{node.module}' not allowed"
+        except SyntaxError:
+            return "Code contains syntax errors"
+
+        # Second pass: string patterns for things AST might miss
+        string_patterns = [
             (".ssh/", "SSH key access not allowed"),
             ("PRIVATE KEY", "Private key access not allowed"),
-            ("ctypes", "C-level access not allowed"),
-            ("socket.socket", "Raw sockets not allowed"),
+            ("BEGIN RSA", "Private key access not allowed"),
+            ("BEGIN EC", "Private key access not allowed"),
         ]
-        for pattern, reason in dangerous:
+        for pattern, reason in string_patterns:
             if pattern in code:
                 return reason
         return None

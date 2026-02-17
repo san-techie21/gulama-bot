@@ -54,7 +54,7 @@ class NotesSkill(BaseSkill):
         if not content:
             return SkillResult(success=False, output="", error="Content is required")
 
-        valid_categories = {"preference", "identity", "knowledge", "skill", "context"}
+        valid_categories = {"preference", "identity", "knowledge", "skill", "context", "conversation_summary", "decision"}
         if category not in valid_categories:
             category = "knowledge"
 
@@ -62,8 +62,10 @@ class NotesSkill(BaseSkill):
 
         store = MemoryStore()
         store.open()
-        fact_id = store.add_fact(category=category, content=content)
-        store.close()
+        try:
+            fact_id = store.add_fact(category=category, content=content)
+        finally:
+            store.close()
 
         return SkillResult(
             success=True,
@@ -80,8 +82,10 @@ class NotesSkill(BaseSkill):
 
         store = MemoryStore()
         store.open()
-        facts = store.search_facts(query, limit=10)
-        store.close()
+        try:
+            facts = store.search_facts(query, limit=10)
+        finally:
+            store.close()
 
         if not facts:
             return SkillResult(success=True, output="No matching facts found.")
@@ -102,8 +106,10 @@ class NotesSkill(BaseSkill):
 
         store = MemoryStore()
         store.open()
-        facts = store.get_facts(category=category, limit=20)
-        store.close()
+        try:
+            facts = store.get_facts(category=category, limit=20)
+        finally:
+            store.close()
 
         if not facts:
             return SkillResult(success=True, output="No facts stored yet.")
@@ -134,7 +140,7 @@ class NotesSkill(BaseSkill):
                         },
                         "category": {
                             "type": "string",
-                            "enum": ["preference", "identity", "knowledge", "skill", "context"],
+                            "enum": ["preference", "identity", "knowledge", "skill", "context", "conversation_summary", "decision"],
                             "description": "Category for save/list operations",
                         },
                         "content": {

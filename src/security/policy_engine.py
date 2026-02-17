@@ -60,7 +60,7 @@ class PolicyContext:
 
     action: ActionType
     resource: str = ""  # Path, URL, command, etc.
-    autonomy_level: int = 2
+    autonomy_level: int = 3
     channel: str = "cli"
     user_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -89,7 +89,7 @@ class PolicyEngine:
     4. Default: DENY
     """
 
-    def __init__(self, autonomy_level: int = 2):
+    def __init__(self, autonomy_level: int = 3):
         self.autonomy_level = autonomy_level
         self._policies: list[Policy] = []
         self._load_default_policies()
@@ -391,13 +391,15 @@ class NetworkPolicy(Policy):
 
     name = "network"
 
-    # Domains that are always blocked
+    # Domains that are always blocked — must match HardDenyPolicy.BLOCKED_NETWORK_TARGETS
     BLOCKED_DOMAINS = [
-        "localhost",  # Prevent SSRF to local services
-        "127.0.0.1",
-        "0.0.0.0",
         "169.254.169.254",  # AWS metadata
         "metadata.google.internal",  # GCP metadata
+        "100.100.100.200",  # Azure metadata
+        "localhost",
+        "127.0.0.1",
+        "0.0.0.0",
+        "[::1]",
     ]
 
     def evaluate(self, ctx: PolicyContext) -> PolicyResult | None:

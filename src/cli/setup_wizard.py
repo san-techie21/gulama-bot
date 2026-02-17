@@ -40,8 +40,8 @@ LLM_PROVIDERS = [
 AUTONOMY_LEVELS = [
     (0, "Observer — Ask before every action"),
     (1, "Assistant — Auto-read, ask before writes"),
-    (2, "Co-pilot — Auto safe actions, ask before shell/network (Recommended)"),
-    (3, "Autopilot-cautious — Auto most things, ask before destructive"),
+    (2, "Co-pilot — Auto safe actions, ask before shell/network"),
+    (3, "Autopilot-cautious — Auto most things, ask before destructive (Recommended)"),
     (4, "Autopilot — Auto everything except financial/credential"),
 ]
 
@@ -193,13 +193,13 @@ class SetupWizard:
         self.console.print("How much freedom should Gulama have?\n")
 
         for level, desc in AUTONOMY_LEVELS:
-            marker = " (default)" if level == 2 else ""
+            marker = " (default)" if level == 3 else ""
             self.console.print(f"  [{level}] {desc}{marker}")
 
         level = click.prompt(
             "\n  Autonomy level",
             type=click.IntRange(0, 4),
-            default=2,
+            default=3,
         )
 
         self.console.print(f"  [green]Autonomy level set to {level}.[/]\n")

@@ -40,7 +40,7 @@ CACHE_DIR = DATA_DIR / "cache"
 
 # Security constants
 MAX_CONTEXT_TOKENS = 8000
-DEFAULT_AUTONOMY_LEVEL = 2
+DEFAULT_AUTONOMY_LEVEL = 3
 DEFAULT_DAILY_TOKEN_BUDGET = 500_000
 
 # Sensitive path patterns — NEVER allow access

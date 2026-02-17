@@ -32,7 +32,7 @@ class TestAutonomyConfig:
 
     def test_default_level(self):
         cfg = AutonomyConfig()
-        assert cfg.default_level == 2
+        assert cfg.default_level == 3
 
     def test_valid_levels(self):
         for level in range(5):
@@ -85,4 +85,4 @@ class TestGulamaConfig:
         cfg = GulamaConfig()
         assert cfg.gateway.host == "127.0.0.1"
         assert cfg.security.sandbox_enabled is True
-        assert cfg.autonomy.default_level == 2
+        assert cfg.autonomy.default_level == 3

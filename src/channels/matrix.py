@@ -29,12 +29,24 @@ class MatrixChannel(BaseChannel):
         access_token: str = "",
         allowed_rooms: list[str] | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(channel_name="matrix")
         self.homeserver = homeserver
         self.user_id = user_id
         self.access_token = access_token
         self.allowed_rooms = set(allowed_rooms) if allowed_rooms else None
         self._client: Any = None
+
+    async def send_message(self, user_id: str, content: str, **kwargs: Any) -> None:
+        """Send a message to a Matrix room."""
+        room_id = kwargs.get("room_id", "")
+        if not self._client or not room_id:
+            logger.warning("matrix_send_failed", reason="No client or room_id")
+            return
+        await self._client.room_send(
+            room_id=room_id,
+            message_type="m.room.message",
+            content={"msgtype": "m.text", "body": content},
+        )
 
     async def _setup_client(self) -> None:
         """Initialize the Matrix client."""

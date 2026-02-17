@@ -27,10 +27,14 @@ class TeamsChannel(BaseChannel):
         app_password: str = "",
         allowed_user_ids: list[str] | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(channel_name="teams")
         self.app_id = app_id
         self.app_password = app_password
         self.allowed_user_ids = set(allowed_user_ids) if allowed_user_ids else None
+
+    async def send_message(self, user_id: str, content: str, **kwargs: Any) -> None:
+        """Send a message via Teams webhook response."""
+        logger.info("teams_send", user=user_id, length=len(content))
 
     async def handle_activity(self, activity: dict[str, Any]) -> dict[str, Any]:
         """

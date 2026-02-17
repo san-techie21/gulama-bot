@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS messages (
 -- Extracted facts / long-term knowledge
 CREATE TABLE IF NOT EXISTS facts (
     id TEXT PRIMARY KEY,
-    category TEXT NOT NULL CHECK(category IN ('preference', 'identity', 'knowledge', 'skill', 'context')),
+    category TEXT NOT NULL CHECK(category IN ('preference', 'identity', 'knowledge', 'skill', 'context', 'conversation_summary', 'decision')),
     content TEXT NOT NULL,
     source_message_id TEXT REFERENCES messages(id),
     confidence REAL DEFAULT 1.0 CHECK(confidence BETWEEN 0.0 AND 1.0),

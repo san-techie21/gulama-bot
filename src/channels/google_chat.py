@@ -22,8 +22,12 @@ class GoogleChatChannel(BaseChannel):
     """Google Chat (Workspace) channel."""
 
     def __init__(self, allowed_spaces: list[str] | None = None) -> None:
-        super().__init__()
+        super().__init__(channel_name="google_chat")
         self.allowed_spaces = set(allowed_spaces) if allowed_spaces else None
+
+    async def send_message(self, user_id: str, content: str, **kwargs: Any) -> None:
+        """Send a message via Google Chat webhook response."""
+        logger.info("google_chat_send", user=user_id, length=len(content))
 
     async def handle_event(self, event: dict[str, Any]) -> dict[str, Any]:
         """

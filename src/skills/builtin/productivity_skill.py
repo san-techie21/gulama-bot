@@ -102,6 +102,7 @@ class ProductivitySkill(BaseSkill):
         dispatch = {
             "trello": self._trello,
             "linear": self._linear,
+            "jira": self._jira,
             "todoist": self._todoist,
             "obsidian": self._obsidian,
         }
@@ -111,7 +112,7 @@ class ProductivitySkill(BaseSkill):
             return SkillResult(
                 success=False,
                 output="",
-                error=f"Unknown service: {service}. Supported: trello, linear, todoist, obsidian",
+                error=f"Unknown service: {service}. Supported: trello, linear, jira, todoist, obsidian",
             )
 
         try:
@@ -238,6 +239,106 @@ class ProductivitySkill(BaseSkill):
                 )
 
         return SkillResult(success=False, output="", error=f"Unknown Linear action: {action}")
+
+    # ── Jira ──────────────────────────────────────────────────
+
+    async def _jira(self, action: str = "", **kwargs: Any) -> SkillResult:
+        base_url = os.getenv("JIRA_BASE_URL", "")
+        email = os.getenv("JIRA_EMAIL", "")
+        token = os.getenv("JIRA_API_TOKEN", "")
+        if not base_url or not email or not token:
+            return SkillResult(
+                success=False,
+                output="",
+                error="JIRA_BASE_URL, JIRA_EMAIL, and JIRA_API_TOKEN required.",
+            )
+
+        import httpx
+
+        auth = (email, token)
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+
+        async with httpx.AsyncClient(timeout=20, auth=auth) as client:
+            if action == "list":
+                project = kwargs.get("project_id", "")
+                jql = f"project={project} ORDER BY updated DESC" if project else "ORDER BY updated DESC"
+                resp = await client.get(
+                    f"{base_url.rstrip('/')}/rest/api/3/search",
+                    params={"jql": jql, "maxResults": 20},
+                    headers=headers,
+                )
+                resp.raise_for_status()
+                issues = resp.json().get("issues", [])
+                lines = []
+                for i in issues:
+                    key = i.get("key", "")
+                    fields = i.get("fields", {})
+                    summary = fields.get("summary", "")
+                    status = fields.get("status", {}).get("name", "")
+                    assignee = (fields.get("assignee") or {}).get("displayName", "Unassigned")
+                    lines.append(f"- {key}: {summary} [{status}] ({assignee})")
+                return SkillResult(success=True, output="\n".join(lines) or "No issues found.")
+
+            elif action == "get":
+                issue_key = kwargs.get("issue_key", "")
+                if not issue_key:
+                    return SkillResult(success=False, output="", error="issue_key required.")
+                resp = await client.get(
+                    f"{base_url.rstrip('/')}/rest/api/3/issue/{issue_key}",
+                    headers=headers,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                fields = data.get("fields", {})
+                return SkillResult(
+                    success=True,
+                    output=(
+                        f"Key: {data.get('key', '')}\n"
+                        f"Summary: {fields.get('summary', '')}\n"
+                        f"Status: {fields.get('status', {}).get('name', '')}\n"
+                        f"Assignee: {(fields.get('assignee') or {}).get('displayName', 'Unassigned')}\n"
+                        f"Description: {(fields.get('description') or '')[:500]}"
+                    ),
+                )
+
+            elif action == "create":
+                title = kwargs.get("title", "")
+                desc = kwargs.get("description", "")
+                project_id = kwargs.get("project_id", "")
+                if not title or not project_id:
+                    return SkillResult(
+                        success=False, output="", error="title and project_id required."
+                    )
+                body = {
+                    "fields": {
+                        "project": {"key": project_id},
+                        "summary": title,
+                        "description": {
+                            "type": "doc",
+                            "version": 1,
+                            "content": [
+                                {
+                                    "type": "paragraph",
+                                    "content": [{"text": desc or title, "type": "text"}],
+                                }
+                            ],
+                        },
+                        "issuetype": {"name": "Task"},
+                    }
+                }
+                resp = await client.post(
+                    f"{base_url.rstrip('/')}/rest/api/3/issue",
+                    headers=headers,
+                    json=body,
+                )
+                resp.raise_for_status()
+                issue = resp.json()
+                return SkillResult(
+                    success=True,
+                    output=f"Issue created: {issue.get('key', '')} — {title}",
+                )
+
+        return SkillResult(success=False, output="", error=f"Unknown Jira action: {action}")
 
     # ── Todoist ────────────────────────────────────────────────
 

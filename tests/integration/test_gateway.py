@@ -28,7 +28,7 @@ def app():
         config.logging.format = "text"
         config.llm.provider = "test"
         config.llm.model = "test-model"
-        config.autonomy.default_level = 2
+        config.autonomy.default_level = 3
         config.security.sandbox_enabled = True
         config.security.policy_engine_enabled = True
         config.security.canary_tokens_enabled = True

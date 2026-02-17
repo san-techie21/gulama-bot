@@ -60,7 +60,10 @@ class WebSearchSkill(BaseSkill):
     async def _search(self, query: str, max_results: int = 5) -> SkillResult:
         """Search the web using DuckDuckGo."""
         try:
-            from duckduckgo_search import DDGS
+            try:
+                from ddgs import DDGS
+            except ImportError:
+                from duckduckgo_search import DDGS
 
             results = []
             with DDGS() as ddgs:
@@ -114,8 +117,8 @@ class WebSearchSkill(BaseSkill):
         try:
             import httpx
 
-            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
-                resp = await client.get(url, headers={"User-Agent": "Gulama/0.1"})
+            async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+                resp = await client.get(url, headers={"User-Agent": "Gulama/0.2 (+https://gulama.ai)"})
                 resp.raise_for_status()
 
                 content_type = resp.headers.get("content-type", "")

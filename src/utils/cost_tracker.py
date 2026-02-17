@@ -61,7 +61,7 @@ class CostTracker:
     def __init__(
         self,
         memory_store: MemoryStore | None = None,
-        daily_budget_usd: float = 10.0,
+        daily_budget_usd: float = 2.50,
     ):
         self.memory_store = memory_store
         self.daily_budget_usd = daily_budget_usd

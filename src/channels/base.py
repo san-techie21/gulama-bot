@@ -35,11 +35,35 @@ class BaseChannel(abc.ABC):
         """Send a message to a user."""
         ...
 
-    @abc.abstractmethod
     def stop(self) -> None:
         """Gracefully stop the channel."""
-        ...
+        self._running = False
 
     @property
     def is_running(self) -> bool:
         return self._running
+
+    async def process_message(
+        self,
+        message: str,
+        user_id: str | None = None,
+        channel_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Process a user message through AgentBrain.
+
+        This is a convenience method used by webhook-based channels
+        (Matrix, Teams, Google Chat) that don't manage their own brain instance.
+        """
+        from src.agent.brain import AgentBrain
+        from src.gateway.config import load_config
+
+        config = load_config()
+        brain = AgentBrain(config=config)
+
+        result = await brain.process_message(
+            message=message,
+            channel=self.channel_name,
+            user_id=user_id,
+        )
+        return result
