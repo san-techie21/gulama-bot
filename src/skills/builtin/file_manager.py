@@ -126,22 +126,27 @@ class FileManagerSkill(BaseSkill):
             "type": "function",
             "function": {
                 "name": "file_manager",
-                "description": "Read, write, and list files. Operations: read, write, list",
+                "description": (
+                    "Read, write, and list files/directories on the local file system. "
+                    "Use operation='list' with a directory path to list its contents. "
+                    "Use operation='read' with a file path to read a file. "
+                    "Use operation='write' with a file path and content to create/overwrite a file."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "operation": {
                             "type": "string",
                             "enum": ["read", "write", "list"],
-                            "description": "The file operation to perform",
+                            "description": "read = read file contents, write = write to file, list = list directory contents",
                         },
                         "path": {
                             "type": "string",
-                            "description": "File or directory path",
+                            "description": "Absolute path to a file or directory (e.g., 'C:\\Users' or '/home/user')",
                         },
                         "content": {
                             "type": "string",
-                            "description": "Content to write (for write operation)",
+                            "description": "Content to write (only for write operation)",
                         },
                     },
                     "required": ["operation", "path"],
